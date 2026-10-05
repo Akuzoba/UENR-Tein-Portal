@@ -1,0 +1,196 @@
+@import "tailwindcss";
+
+/* Light "paper" theme. NDC colours are used as flat accents: black · red · white · green. */
+:root {
+  --background: #f6f4ef;
+  --foreground: #141414;
+  color-scheme: light;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-paper: #f6f4ef;
+  --color-ink: #141414;
+  --color-muted: #5f5c55;
+  --color-line: #dfdbd1;
+  --color-ndc-black: #141414;
+  --color-ndc-red: #d2232a;
+  --color-ndc-red-dark: #a8161c;
+  --color-ndc-green: #0b7a3b;
+  --color-ndc-green-dark: #075c2b;
+  --font-sans: var(--font-barlow), Arial, sans-serif;
+  --font-display: var(--font-barlow-condensed), "Arial Narrow", sans-serif;
+}
+
+html { scroll-behavior: smooth; }
+body { background: var(--background); color: var(--foreground); font-family: var(--font-sans); }
+::selection { background: #d2232a; color: #fff; }
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold transition-colors duration-150 select-none disabled:pointer-events-none disabled:opacity-50;
+  }
+  .btn-primary { @apply bg-ndc-red text-white hover:bg-ndc-red-dark; }
+  .btn-green { @apply bg-ndc-green text-white hover:bg-ndc-green-dark; }
+  .btn-dark { @apply bg-ink text-white hover:bg-black; }
+  .btn-outline { @apply border border-ink/80 bg-transparent text-ink hover:bg-ink hover:text-white; }
+  .btn-ghost { @apply border border-line bg-white text-ink hover:border-ink/40; }
+  .btn-danger { @apply border border-ndc-red/40 bg-white text-ndc-red hover:bg-ndc-red hover:text-white; }
+
+  .field { @apply block text-sm font-semibold text-ink; }
+  .input {
+    @apply mt-1.5 w-full rounded-md border border-line bg-white px-3 py-2.5 font-normal text-ink outline-none transition-colors placeholder:text-muted/60 hover:border-ink/30 focus:border-ndc-green focus:ring-2 focus:ring-ndc-green/15;
+  }
+
+  .panel { @apply rounded-lg border border-line bg-white; }
+  .badge { @apply inline-flex items-center gap-1.5 rounded px-2 py-0.5 text-xs font-semibold capitalize; }
+  .badge-paid { @apply bg-ndc-green/10 text-ndc-green; }
+  .badge-pending { @apply bg-amber-100 text-amber-800; }
+
+  .eyebrow { @apply text-xs font-bold tracking-[0.14em] text-ndc-red uppercase; }
+  .headline { @apply font-display font-extrabold tracking-tight uppercase; line-height: 0.92; }
+  /* The party flag as a flat four-colour rule. */
+  .flag-rule { background: linear-gradient(90deg, #141414 0 25%, #d2232a 25% 50%, #ffffff 50% 75%, #0b7a3b 75%); }
+  .skeleton { @apply animate-pulse rounded-md bg-line/60; }
+}
+
+/* ---- Motion: short, cheap (transform/opacity only) and switched off for reduced-motion users ---- */
+@keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slide-in { from { opacity: 0; transform: translateX(var(--from, 24px)); } to { opacity: 1; transform: none; } }
+@keyframes settle { from { opacity: 0; transform: translateY(30px) rotate(-7deg); } to { opacity: 1; transform: rotate(-3deg); } }
+@keyframes grow-y { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes grow-x { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes draw { from { stroke-dashoffset: 60; } to { stroke-dashoffset: 0; } }
+@keyframes shake { 20%, 60% { transform: translateX(-5px); } 40%, 80% { transform: translateX(5px); } }
+
+.anim-rise { animation: rise 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+@keyframes line-up { from { transform: translateY(105%); } to { transform: none; } }
+.anim-line { animation: line-up 0.75s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.anim-fade { animation: fade 0.4s ease-out both; }
+.anim-slide { animation: slide-in 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.anim-settle { animation: settle 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) 0.15s both; }
+.anim-shake { animation: shake 0.35s ease-in-out; }
+/* Scroll reveal: <Reveal> adds .is-in when the element enters the viewport. */
+.reveal { opacity: 0; transform: translateY(16px); transition: opacity 0.6s ease-out, transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.reveal.is-in { opacity: 1; transform: none; }
+/* 3D variants: a panel that swings up from the floor, and one that zooms out of the screen. */
+.reveal-flip { transform: perspective(900px) rotateX(-75deg); transform-origin: 50% 100%; transition-duration: 0.6s, 0.9s; }
+.reveal-zoom { transform: perspective(900px) translateZ(-160px) rotateY(12deg); transition-duration: 0.6s, 0.9s; }
+
+/* ---- Main site ("rally poster") ---- */
+/* Headline words rise out of a mask one after another (<Words>). */
+.word-mask { display: inline-block; overflow: hidden; vertical-align: bottom; padding-bottom: 0.08em; margin-bottom: -0.08em; }
+.word-mask > span { display: inline-block; animation: line-up 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+
+/* Flat ink with a light film grain for the dark bands. */
+.ink-band { position: relative; isolation: isolate; background: #141414; color: #fff; overflow: hidden; }
+.ink-band::after {
+  content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: 0.09; mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Four flag bars that sweep in from the left, staggered. */
+.flag-bars > span { display: block; transform-origin: left; animation: grow-x 0.9s cubic-bezier(0.7, 0, 0.2, 1) both; }
+.flag-bars > span:nth-child(2) { animation-delay: 0.08s; }
+.flag-bars > span:nth-child(3) { animation-delay: 0.16s; }
+.flag-bars > span:nth-child(4) { animation-delay: 0.24s; }
+
+/* Rally banners: endless marquee. The track holds the text twice and slides by half its width. */
+@keyframes marquee { to { transform: translateX(-50%); } }
+.marquee { display: flex; width: max-content; animation: marquee var(--speed, 30s) linear infinite; }
+.marquee.reverse { animation-direction: reverse; }
+.text-outline { color: transparent; -webkit-text-stroke: 1.5px var(--stroke, #141414); }
+
+/* Moving diagonal stripes for the join band. */
+.stripes { background-image: repeating-linear-gradient(-45deg, rgb(255 255 255 / 0.07) 0 18px, transparent 18px 36px); background-size: 51px 51px; animation: stripes 2.4s linear infinite; }
+@keyframes stripes { to { background-position: 51px 0; } }
+
+/* Floating 3D emblem in the page headers. */
+@keyframes sway { 0%, 100% { transform: rotateY(-22deg) rotateX(6deg) translateY(0); } 50% { transform: rotateY(22deg) rotateX(-4deg) translateY(-10px); } }
+.emblem-3d { animation: sway 9s ease-in-out infinite; transform-style: preserve-3d; filter: drop-shadow(0 30px 40px rgb(0 0 0 / 0.5)); }
+
+/* Lightbox photo swinging forward. */
+@keyframes pop { from { opacity: 0; transform: perspective(1200px) translateZ(-200px) rotateY(-8deg); } }
+.anim-pop { animation: pop 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+
+/* Slow push-in on photo backdrops. */
+@keyframes ken-burns { from { transform: scale(1.12); } to { transform: scale(1); } }
+.ken-burns { animation: ken-burns 2.4s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+
+/* Light glare that follows the pointer on <Tilt glare>. */
+.glare { pointer-events: none; position: absolute; inset: 0; z-index: 2; opacity: 0; transition: opacity 0.3s; background: radial-gradient(circle at var(--gx, 50%) var(--gy, 50%), rgb(255 255 255 / 0.35), transparent 55%); mix-blend-mode: soft-light; }
+.tilt-host:hover .glare { opacity: 1; }
+
+/* Executive card that turns over to show the bio. */
+.flip-card { perspective: 1200px; }
+.flip-card-inner { position: relative; height: 100%; transform-style: preserve-3d; transition: transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.flip-card.is-flipped .flip-card-inner { transform: rotateY(180deg); }
+@media (hover: hover) { .flip-card:hover .flip-card-inner { transform: rotateY(180deg); } }
+.flip-card-face { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.flip-card-back { position: absolute; inset: 0; transform: rotateY(180deg); }
+
+/* Scroll-linked entrance where the browser supports it (no JS); elsewhere items just show. */
+@supports (animation-timeline: view()) {
+  .scroll-in { animation: scroll-in linear both; animation-timeline: view(); animation-range: entry 0% entry 70%; }
+  @keyframes scroll-in { from { opacity: 0; transform: perspective(800px) translateY(40px) rotateX(18deg) scale(0.96); } }
+}
+
+/* ---- Page transitions (React <ViewTransition>) ---- */
+::view-transition { pointer-events: none; }
+::view-transition-old(.page-exit) { animation: 120ms ease-in both fade reverse; }
+::view-transition-new(.page-enter) { animation: 220ms ease-out 80ms both fade, 320ms cubic-bezier(0.2, 0.8, 0.2, 1) both vt-lift; }
+::view-transition-group(brand) { animation-duration: 350ms; }
+::view-transition-group(site-header) { animation: none; z-index: 50; }
+::view-transition-old(site-header) { display: none; }
+::view-transition-new(site-header) { animation: none; }
+@keyframes vt-lift { from { transform: translateY(8px); } to { transform: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+  .reveal { opacity: 1; transform: none; }
+  .marquee, .emblem-3d, .stripes { animation: none !important; }
+  .flip-card-inner { transition: none; }
+  ::view-transition-old(*), ::view-transition-new(*), ::view-transition-group(*) { animation-duration: 0s !important; animation-delay: 0s !important; }
+}
+
+/* ---- Membership card: designed at 856x540px (CR80 = 85.6x54mm at 10px/mm) ---- */
+.card-frame { width: 428px; height: 270px; overflow: hidden; border-radius: 14px; box-shadow: 0 1px 2px rgb(0 0 0 / 0.08), 0 12px 32px -12px rgb(0 0 0 / 0.3); flex-shrink: 0; }
+.card-face { width: 856px; height: 540px; transform: scale(0.5); transform-origin: top left; }
+.card-sm .card-frame { width: 321px; height: 202.5px; border-radius: 10px; }
+.card-sm .card-face { transform: scale(0.375); }
+
+@media (max-width: 480px) {
+  .card-frame { width: 320px; height: 202px; }
+  .card-face { transform: scale(0.3738); }
+  .card-sm .card-frame { width: 280px; height: 177px; }
+  .card-sm .card-face { transform: scale(0.3271); }
+}
+
+/* 3D flip for the card viewer */
+.flip { perspective: 1600px; }
+.flip-inner { position: relative; transform-style: preserve-3d; transition: transform 0.7s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.flip-inner.is-flipped { transform: rotateY(180deg); }
+.flip-face { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.flip-back { position: absolute; inset: 0; transform: rotateY(180deg); }
+
+@media print {
+  @page { size: 85.6mm 54mm; margin: 0; }
+  html, body { background: #fff !important; color: #000 !important; height: auto !important; min-height: 0 !important; }
+  .no-print { display: none !important; }
+  /* On pages with cards, print only the cards: hide anything that neither holds nor sits inside a card area. */
+  body:has(.print-area) *:not(:has(.print-area)):not(.print-area):not(.print-area *) { display: none !important; }
+  .print-area { display: block !important; margin: 0 !important; padding: 0 !important; }
+  /* Strip layout chrome from everything wrapping the cards, and clip sub-pixel overflow so Chrome doesn't shrink the printout. */
+  *:has(.print-area), .print-area { min-height: 0 !important; height: auto !important; overflow: hidden !important; }
+  *:has(.print-area) { display: block !important; margin: 0 !important; padding: 0 !important; border: 0 !important; border-radius: 0 !important; max-width: none !important; box-shadow: none !important; background: #fff !important; transform: none !important; }
+  .flip-inner, .flip-back, .flip-face { transform: none !important; position: static !important; backface-visibility: visible !important; }
+  /* One card face per page: break before every face except the very first (marked .print-first). */
+  .card-frame { width: 85.6mm; height: 54mm; border-radius: 0; box-shadow: none; margin: 0 !important; break-before: page; }
+  .print-first > .card-frame:first-child, .print-first .flip-face:first-child > .card-frame { break-before: auto; }
+  .card-face { transform: scale(0.37795); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .card-sm .card-frame { width: 85.6mm; height: 54mm; border-radius: 0; }
+  .card-sm .card-face { transform: scale(0.37795); }
+}

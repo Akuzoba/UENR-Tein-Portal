@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <!-- PLACEHOLDER: replace with the official UENR crest (same file name, or update UENR_CREST in components/MemberCard.tsx) -->
+  <rect width="200" height="200" fill="#fff"/>
+  <path d="M50 40 H150 V110 Q150 160 100 178 Q50 160 50 110 Z" fill="#1f5fae" stroke="#7a1f2b" stroke-width="6"/>
+  <path d="M50 96 H150 V110 Q150 160 100 178 Q50 160 50 110 Z" fill="#2e8b3e"/>
+  <path d="M58 132 Q80 118 100 132 T142 132" fill="none" stroke="#fff" stroke-width="6"/>
+  <circle cx="100" cy="72" r="16" fill="#f2c230"/>
+  <text x="100" y="196" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="900" fill="#7a1f2b" text-anchor="middle">UENR</text>
+</svg>
