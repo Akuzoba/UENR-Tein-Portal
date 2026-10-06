@@ -173,7 +173,7 @@ export default async function Home() {
         {/* ---------------- Closing band ---------------- */}
         <section className="bg-ndc-red text-white">
           <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-6 px-5 py-12 sm:flex-row sm:items-center">
-            <h2 className="headline text-4xl sm:text-5xl">Membership {year} is open</h2>
+            <h2 className="headline text-4xl sm:text-5xl">{year} MEMBERSHIP REGISTRATION IS OPEN</h2>
             <Link href="/portal/register" className="btn group bg-white px-6 py-3.5 text-base text-ink hover:bg-paper">
               Register now <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
             </Link>

@@ -16,9 +16,9 @@ export type CardData = {
   signatory: { name: string; title: string; signature: string }; // signature: data URL or ""
 };
 
-// Swap these files for the official artwork (any image type works; keep them square).
-const NDC_LOGO = "/card/ndc-logo.svg";
-const UENR_CREST = "/card/uenr-crest.svg";
+// Official artwork (square images on white, shown inside the round emblems).
+const NDC_LOGO = "/card/ndc-logo.jpeg";
+const UENR_CREST = "/card/uenr-crest.jpeg";
 
 const RED = "#d2232a";
 const INK = "#141414";
