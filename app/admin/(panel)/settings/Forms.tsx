@@ -1,7 +1,9 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
-import { addAdmin, changePassword, updateFee, updateSignatory, type FormState } from "../../actions";
+import { useActionState, useEffect, useRef, useState } from "react";
+import { Search, X } from "lucide-react";
+import { searchPrograms } from "@/components/ProgramPicker";
+import { addAdmin, addPrograms, changePassword, removeProgram, updateFee, updateSignatory, type FormState } from "../../actions";
 
 function Status({ state }: { state: FormState }) {
   if (state.error) return <p className="rounded-md border-l-4 border-ndc-red bg-ndc-red/5 px-3 py-2 text-sm font-medium text-ndc-red">{state.error}</p>;
@@ -120,5 +122,56 @@ export function FeeForm({ current, currency }: { current: string; currency: stri
       <Status state={state} />
       <button disabled={pending} className="btn btn-dark">{pending ? "Saving…" : "Save fee"}</button>
     </form>
+  );
+}
+
+export function ProgramsForm({ programs }: { programs: string[] }) {
+  const [state, action, pending] = useActionState<FormState, FormData>(addPrograms, {});
+  const ref = useResetOnSuccess(state);
+  const [q, setQ] = useState("");
+  const shown = searchPrograms(programs, q);
+  return (
+    <div className="mt-4 grid gap-6 lg:grid-cols-[1fr_340px]">
+      <div>
+        <div className="relative">
+          <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted" />
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            type="search"
+            placeholder={`Search ${programs.length} programmes`}
+            aria-label="Search programmes"
+            className="input mt-0 pl-9"
+          />
+        </div>
+        <ul className="mt-2 max-h-80 divide-y divide-line overflow-auto rounded-md border border-line">
+          {shown.map((p) => (
+            <li key={p} className="flex items-center gap-3 px-3 py-2 text-sm">
+              <span className="min-w-0 flex-1">{p}</span>
+              <form action={removeProgram}>
+                <input type="hidden" name="name" value={p} />
+                <button className="rounded-md p-1.5 text-muted transition-colors hover:bg-ndc-red/10 hover:text-ndc-red" aria-label={`Remove ${p}`}>
+                  <X className="h-4 w-4" />
+                </button>
+              </form>
+            </li>
+          ))}
+          {!shown.length && <li className="px-3 py-6 text-center text-sm text-muted">{q ? `No programme matches “${q}”` : "No programmes yet"}</li>}
+        </ul>
+        {q && shown.length > 0 && <p className="mt-2 text-xs text-muted">Showing {shown.length} of {programs.length}</p>}
+      </div>
+      <form ref={ref} action={action} className="space-y-3">
+        <label className="field">
+          Add programmes
+          <textarea name="names" rows={5} required placeholder={"BSc Computer Science\nBSc Nursing"} className="input resize-y" />
+        </label>
+        <p className="text-xs text-muted">
+          One per line, so you can paste a whole list at once. Removing a programme only takes it off the registration form;
+          members already registered under it keep it.
+        </p>
+        <Status state={state} />
+        <button disabled={pending} className="btn btn-dark">{pending ? "Adding…" : "Add to list"}</button>
+      </form>
+    </div>
   );
 }

@@ -1,5 +1,5 @@
-import { GENDERS, PERIODS, PROGRAMS, fmtMoney } from "@/lib/config";
-import { getFeeMinor, getSignatory } from "@/lib/db";
+import { GENDERS, PERIODS, fmtMoney } from "@/lib/config";
+import { getFeeMinor, getPrograms, getSignatory } from "@/lib/db";
 import { isTestMode } from "@/lib/paystack";
 import PageTransition from "@/components/PageTransition";
 import RegisterWizard from "./RegisterWizard";
@@ -23,7 +23,7 @@ export default async function RegisterPage() {
         </div>
         <div className="mx-auto max-w-6xl px-5">
           <RegisterWizard
-            programs={PROGRAMS}
+            programs={await getPrograms()}
             periods={PERIODS}
             genders={GENDERS}
             fee={fmtMoney((await getFeeMinor()))}

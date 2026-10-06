@@ -2,7 +2,7 @@
 import postgres from "postgres";
 import { randomBytes } from "crypto";
 import { hashPassword } from "./password";
-import { DEFAULT_FEE } from "./config";
+import { DEFAULT_FEE, DEFAULT_PROGRAMS } from "./config";
 
 export const DEFAULT_ADMIN = { username: "admin", password: process.env.ADMIN_INITIAL_PASSWORD || "Admin@123" };
 
@@ -212,6 +212,23 @@ export async function setSignatory(name: string, title: string, signature?: stri
   await setSetting("signatory_title", title);
   if (signature !== undefined) await setSetting("signatory_signature", signature);
 }
+
+/** Programme options for registration, A–Z with "Other" last. Admins manage them in Settings. */
+export async function getPrograms(): Promise<string[]> {
+  try {
+    const list = JSON.parse((await setting("programs")) ?? "null");
+    if (Array.isArray(list)) return list.filter((p): p is string => typeof p === "string");
+  } catch {}
+  return DEFAULT_PROGRAMS;
+}
+
+export const setPrograms = (list: string[]) =>
+  setSetting(
+    "programs",
+    JSON.stringify(
+      [...list].sort((a, b) => Number(a === "Other") - Number(b === "Other") || a.localeCompare(b, "en", { sensitivity: "base" })),
+    ),
+  );
 
 /* ------------------------------------------------------------------ members */
 
