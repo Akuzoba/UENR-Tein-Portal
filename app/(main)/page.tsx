@@ -159,7 +159,7 @@ export default async function Home() {
           <div className="stripes absolute inset-0" />
           <div className="relative mx-auto flex max-w-6xl flex-col items-start justify-between gap-6 px-5 py-16 sm:flex-row sm:items-center">
             <Reveal>
-              <h2 className="headline text-[clamp(2.6rem,6vw,4.5rem)]">Membership {year} is open</h2>
+              <h2 className="headline text-[clamp(2.6rem,6vw,4.5rem)]">{year} MEMBERSHIP REGISTRATION IS OPEN</h2>
               <p className="mt-3 text-lg text-white/85">Register once, pay your dues online and get your official membership card.</p>
             </Reveal>
             <Link href="/portal/register" className="btn group shrink-0 bg-white px-7 py-4 text-base text-ink shadow-[0_14px_30px_-10px_rgba(0,0,0,.45)] transition-transform hover:-translate-y-0.5 hover:bg-paper">

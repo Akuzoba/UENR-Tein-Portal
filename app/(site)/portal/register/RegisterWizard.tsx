@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Camera, Check, Loader2, Lock } from "lucide-react";
 import { CardFront, type CardData } from "@/components/MemberCard";
-import { compressImage } from "@/lib/image";
+import PhotoEditor, { type PhotoState } from "@/components/PhotoEditor";
 import { INSTITUTION, PROGRAM_TYPES, PROGRAM_YEAR_OPTIONS, levelLabel, yearsLeft } from "@/lib/config";
 
 const STEPS = ["Your details", "Studies", "Photo", "Review"];
@@ -44,6 +44,8 @@ export default function RegisterWizard({ programs, periods, genders, fee, testMo
   const [f, setF] = useState<Form>(EMPTY);
   const [preview, setPreview] = useState<string | null>(null);
   const [photo, setPhoto] = useState<Blob | null>(null);
+  const [photoState, setPhotoState] = useState<PhotoState | null>(null);
+  const [photoBusy, setPhotoBusy] = useState(false);
   const [drag, setDrag] = useState(false);
   const [error, setError] = useState("");
   const [errorKey, setErrorKey] = useState(0);
@@ -68,6 +70,7 @@ export default function RegisterWizard({ programs, periods, genders, fee, testMo
       if (!f.period) return "Select your study mode";
     }
     if (s === 2 && !photo) return "Add a passport photo to continue";
+    if (s === 2 && photoBusy) return "Hold on, we're still finishing your photo";
     return "";
   }
 
@@ -83,17 +86,22 @@ export default function RegisterWizard({ programs, periods, genders, fee, testMo
     setStep(to);
   }
 
-  async function takeFile(file?: File | null) {
+  function takeFile(file?: File | null) {
     if (!file) return;
     if (!file.type.startsWith("image/")) return fail("That file isn't an image");
-    try {
-      const blob = await compressImage(file); // ~600px JPEG
-      setPhoto(blob);
-      setPreview(URL.createObjectURL(blob));
-      setError("");
-    } catch {
-      fail("Could not read that image. Try another photo.");
-    }
+    setPhoto(null);
+    setPreview(null);
+    setPhotoState({ file, crop: null, white: true, touched: false });
+    setError("");
+  }
+
+  // The editor hands back the finished square JPEG whenever the photo or its position changes.
+  function takeOutput(blob: Blob) {
+    setPhoto(blob);
+    setPreview((old) => {
+      if (old) URL.revokeObjectURL(old);
+      return URL.createObjectURL(blob);
+    });
   }
 
   async function submit() {
@@ -275,37 +283,45 @@ export default function RegisterWizard({ programs, periods, genders, fee, testMo
 
             {step === 2 && (
               <>
-                <StepTitle title="Passport photo" sub="Face the camera, plain background, good light. We resize it for you." />
-                <div
-                  onDragOver={(e) => (e.preventDefault(), setDrag(true))}
-                  onDragLeave={() => setDrag(false)}
-                  onDrop={(e) => (e.preventDefault(), setDrag(false), takeFile(e.dataTransfer.files[0]))}
-                  className={`flex flex-col items-center gap-5 rounded-lg border-2 border-dashed p-6 transition-colors sm:flex-row ${
-                    drag ? "border-ndc-green bg-ndc-green/5" : "border-line"
-                  }`}
-                >
-                  <button
-                    type="button"
-                    onClick={() => fileRef.current?.click()}
-                    className="flex h-40 w-32 shrink-0 items-center justify-center overflow-hidden rounded-md bg-paper ring-1 ring-line transition hover:ring-ink/30"
-                    aria-label="Choose photo"
+                <StepTitle title="Passport photo" sub="Face the camera in good light. We'll make the background white and help you frame it." />
+                {photoState ? (
+                  <PhotoEditor value={photoState} onChange={setPhotoState} onOutput={takeOutput} onBusy={setPhotoBusy} onPick={() => fileRef.current?.click()} />
+                ) : (
+                  <div
+                    onDragOver={(e) => (e.preventDefault(), setDrag(true))}
+                    onDragLeave={() => setDrag(false)}
+                    onDrop={(e) => (e.preventDefault(), setDrag(false), takeFile(e.dataTransfer.files[0]))}
+                    className={`flex flex-col items-center gap-5 rounded-lg border-2 border-dashed p-6 transition-colors sm:flex-row ${
+                      drag ? "border-ndc-green bg-ndc-green/5" : "border-line"
+                    }`}
                   >
-                    {preview ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={preview} alt="Your photo" className="anim-fade h-full w-full object-cover" />
-                    ) : (
+                    <button
+                      type="button"
+                      onClick={() => fileRef.current?.click()}
+                      className="flex h-40 w-32 shrink-0 items-center justify-center overflow-hidden rounded-md bg-paper ring-1 ring-line transition hover:ring-ink/30"
+                      aria-label="Choose photo"
+                    >
                       <Camera className="h-8 w-8 text-muted/60" />
-                    )}
-                  </button>
-                  <div className="text-center sm:text-left">
-                    <p className="font-semibold">{preview ? "Photo added." : "Drag a photo here"}</p>
-                    <p className="mt-1 text-sm text-muted">{preview ? "Check it looks right on the card preview." : "or choose one from your phone or computer."}</p>
-                    <button type="button" onClick={() => fileRef.current?.click()} className="btn btn-ghost mt-4">
-                      <Camera className="h-4 w-4" /> {preview ? "Use a different photo" : "Choose photo"}
                     </button>
+                    <div className="text-center sm:text-left">
+                      <p className="font-semibold">Drag a photo here</p>
+                      <p className="mt-1 text-sm text-muted">or choose one from your phone or computer.</p>
+                      <button type="button" onClick={() => fileRef.current?.click()} className="btn btn-ghost mt-4">
+                        <Camera className="h-4 w-4" /> Choose photo
+                      </button>
+                    </div>
                   </div>
-                  <input ref={fileRef} type="file" accept="image/*" onChange={(e) => takeFile(e.target.files?.[0])} className="sr-only" />
-                </div>
+                )}
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    takeFile(e.target.files?.[0]);
+                    e.target.value = ""; // picking the same file again still fires
+                  }}
+                  className="sr-only"
+                />
               </>
             )}
 
