@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, BadgeCheck, Trash2 } from "lucide-react";
-import { getMember } from "@/lib/db";
+import { getMember, getPrograms } from "@/lib/db";
 import { cardData } from "@/lib/card";
-import { GENDERS, PERIODS, PROGRAMS, SITE_URL, cardPeriod, fmtDate, fmtMoney, fmtPeriod, levelLabel, memberCode, methodLabel } from "@/lib/config";
+import { GENDERS, PERIODS, SITE_URL, cardPeriod, fmtDate, fmtMoney, fmtPeriod, levelLabel, memberCode, methodLabel } from "@/lib/config";
 import MemberCard from "@/components/MemberCard";
 import PageTransition from "@/components/PageTransition";
 import { deleteMember, markMemberPaid } from "../../../actions";
@@ -75,7 +75,7 @@ export default async function MemberPage({ params }: PageProps<"/admin/members/[
 
             <section className="panel p-5">
               <H2>Edit details</H2>
-              <EditMember m={m} programs={PROGRAMS} periods={PERIODS} genders={GENDERS} />
+              <EditMember m={m} programs={await getPrograms()} periods={PERIODS} genders={GENDERS} />
             </section>
 
             <section className="panel p-5">

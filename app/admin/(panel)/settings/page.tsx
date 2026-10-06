@@ -1,12 +1,12 @@
-import { Banknote, CreditCard, KeyRound, PenLine, ShieldCheck, Trash2, Users } from "lucide-react";
+import { Banknote, CreditCard, GraduationCap, KeyRound, PenLine, ShieldCheck, Trash2, Users } from "lucide-react";
 import { currentAdmin } from "@/lib/admin";
-import { getFeeMinor, getSignatory, listAdmins } from "@/lib/db";
+import { getFeeMinor, getPrograms, getSignatory, listAdmins } from "@/lib/db";
 import { CURRENCY, fmtDate, fmtMoney } from "@/lib/config";
 import { isTestMode, paymentMode } from "@/lib/paystack";
 import PageTransition from "@/components/PageTransition";
 import PageHeader from "@/components/admin/PageHeader";
 import { removeAdmin } from "../../actions";
-import { AddAdminForm, ChangePasswordForm, FeeForm, SignatoryForm } from "./Forms";
+import { AddAdminForm, ChangePasswordForm, FeeForm, ProgramsForm, SignatoryForm } from "./Forms";
 
 export const metadata = { title: "Settings – TEIN UENR Admin" };
 
@@ -31,11 +31,12 @@ export default async function Settings({ searchParams }: PageProps<"/admin/setti
   const mode = paymentMode();
   const fee = (await getFeeMinor());
   const signatory = await getSignatory();
+  const programs = await getPrograms();
 
   return (
     <PageTransition>
       <div>
-        <PageHeader title="Settings" sub="Membership fee, card signatory, payments, your account and admins." />
+        <PageHeader title="Settings" sub="Membership fee, card signatory, programmes, payments, your account and admins." />
         {welcome && me.must_change === 1 && (
           <p className="mt-5 rounded-md border-l-4 border-ndc-green bg-white px-4 py-3 text-sm">
             <b>Welcome.</b> Please set your own password before you continue.
@@ -54,6 +55,11 @@ export default async function Settings({ searchParams }: PageProps<"/admin/setti
           <Section icon={PenLine} title="Card signatory">
             <p className="mt-1 text-sm text-muted">Printed on the back of every membership card.</p>
             <SignatoryForm {...signatory} />
+          </Section>
+
+          <Section icon={GraduationCap} title="Programmes" className="lg:col-span-2">
+            <p className="mt-1 text-sm text-muted">The options members pick from when they register. Kept in A–Z order, with “Other” last.</p>
+            <ProgramsForm programs={programs} />
           </Section>
 
           <Section icon={KeyRound} title="Change your password">

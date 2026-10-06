@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { findMemberByPhone, upsertMember } from "@/lib/db";
+import { findMemberByPhone, getPrograms, upsertMember } from "@/lib/db";
 import { startPayment } from "@/lib/paystack";
 import { isJpeg, savePhoto } from "@/lib/storage";
-import { GENDERS, PERIODS, PROGRAMS, PROGRAM_YEAR_OPTIONS } from "@/lib/config";
+import { GENDERS, PERIODS, PROGRAM_YEAR_OPTIONS } from "@/lib/config";
 
 const optionalOf = (list: string[], msg: string) =>
   z.string().optional().refine((v) => !v || list.includes(v), msg);
@@ -14,7 +14,7 @@ const schema = z
     email: z.union([z.literal(""), z.string().trim().email("Enter a valid email")]).optional(),
     dob: z.union([z.literal(""), z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date of birth")]).optional(),
     gender: optionalOf(GENDERS, "Invalid gender"),
-    program: optionalOf(PROGRAMS, "Invalid program"),
+    program: z.string().trim().max(120).optional(), // checked against the admin-managed list below
     period: z.string().refine((v) => PERIODS.includes(v), "Select your study mode"),
     program_years: z.coerce
       .number({ error: "Select your programme type" })
@@ -36,6 +36,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
   }
   const d = parsed.data;
+  if (d.program && !(await getPrograms()).includes(d.program)) {
+    return NextResponse.json({ error: "Select your programme from the list" }, { status: 400 });
+  }
 
   const photo = form.get("photo");
   if (!(photo instanceof File) || photo.size === 0) {

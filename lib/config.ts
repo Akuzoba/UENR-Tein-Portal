@@ -1,5 +1,5 @@
-// EDIT THESE to match the real options on campus.
-export const PROGRAMS = [
+// Starting programme list. Once an admin adds or removes one in Settings, the saved list is used instead.
+export const DEFAULT_PROGRAMS = [
   "Diploma in Education",
   "Bachelor of Education",
   "Business Administration",

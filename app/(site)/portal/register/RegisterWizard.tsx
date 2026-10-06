@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Camera, Check, Loader2, Lock } from "lucide-react";
 import { CardFront, type CardData } from "@/components/MemberCard";
 import PhotoEditor, { type PhotoState } from "@/components/PhotoEditor";
+import ProgramPicker from "@/components/ProgramPicker";
 import { INSTITUTION, PROGRAM_TYPES, PROGRAM_YEAR_OPTIONS, levelLabel, yearsLeft } from "@/lib/config";
 
 const STEPS = ["Your details", "Studies", "Photo", "Review"];
@@ -258,13 +259,10 @@ export default function RegisterWizard({ programs, periods, genders, fee, testMo
                     ))}
                   </div>
                 </div>
-                <label className="field">
-                  Programme
-                  <select value={f.program} onChange={set("program")} className="input">
-                    <option value="">Select your programme</option>
-                    {programs.map((p) => <option key={p}>{p}</option>)}
-                  </select>
-                </label>
+                <div>
+                  <label htmlFor="program" className="field">Programme</label>
+                  <ProgramPicker id="program" programs={programs} value={f.program} onChange={(program) => setF({ ...f, program })} />
+                </div>
                 <div className="grid gap-5 sm:grid-cols-2">
                   <label className="field">
                     Gender

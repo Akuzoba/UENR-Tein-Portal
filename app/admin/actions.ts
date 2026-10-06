@@ -10,10 +10,12 @@ import {
   getAdminByUsername,
   getFeeMinor,
   getMember,
+  getPrograms,
   markPaid,
   recordLogin,
   setAdminPassword,
   setFeeMinor,
+  setPrograms,
   setSignatory,
   updateMemberDetails,
 } from "@/lib/db";
@@ -154,4 +156,33 @@ export async function updateFee(_: FormState, form: FormData): Promise<FormState
   await setFeeMinor(Math.round(amount * 100));
   revalidatePath("/", "layout");
   return { ok: "Membership fee updated. New payments use this amount; members who already paid are not affected." };
+}
+
+/** Adds one programme per line; names already on the list (any capitalisation) are skipped. */
+export async function addPrograms(_: FormState, form: FormData): Promise<FormState> {
+  await requireAdmin();
+  const names = String(form.get("names") ?? "")
+    .split(/\r?\n/)
+    .map((n) => n.replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+  if (!names.length) return { error: "Type the name of the programme to add." };
+  if (names.some((n) => n.length > 120)) return { error: "Programme names must be under 120 characters." };
+
+  const list = await getPrograms();
+  const seen = new Set(list.map((p) => p.toLowerCase()));
+  const added = names.filter((n) => !seen.has(n.toLowerCase()) && seen.add(n.toLowerCase()));
+  if (!added.length) return { error: names.length === 1 ? "That programme is already on the list." : "All of those are already on the list." };
+  if (list.length + added.length > 500) return { error: "The list can hold up to 500 programmes." };
+
+  await setPrograms([...list, ...added]);
+  revalidatePath("/", "layout");
+  const skipped = names.length - added.length;
+  return { ok: `Added ${added.length === 1 ? `“${added[0]}”` : `${added.length} programmes`}.${skipped ? ` ${skipped} already on the list.` : ""}` };
+}
+
+export async function removeProgram(form: FormData) {
+  await requireAdmin();
+  const name = String(form.get("name"));
+  await setPrograms((await getPrograms()).filter((p) => p !== name));
+  revalidatePath("/", "layout");
 }

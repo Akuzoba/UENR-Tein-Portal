@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import type { Member } from "@/lib/db";
 import { PROGRAM_YEAR_OPTIONS } from "@/lib/config";
+import ProgramPicker from "@/components/ProgramPicker";
 import { updateMember, type FormState } from "../../../actions";
 
 type Props = { m: Member; programs: string[]; periods: string[]; genders: string[] };
@@ -45,13 +46,10 @@ export default function EditMember({ m, programs, periods, genders }: Props) {
           </select>
         </label>
       </div>
-      <label className="field">
-        Program
-        <select name="program" defaultValue={m.program ?? ""} className="input">
-          <option value="">—</option>
-          {programs.map((p) => <option key={p}>{p}</option>)}
-        </select>
-      </label>
+      <div>
+        <label htmlFor="program" className="field">Program</label>
+        <ProgramPicker id="program" name="program" programs={programs} defaultValue={m.program ?? ""} placeholder="Search programmes" />
+      </div>
       <div className="grid grid-cols-2 gap-3">
         <label className="field">
           Programme length
