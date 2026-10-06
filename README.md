@@ -88,6 +88,22 @@ Executives manage everything in **Admin → Website**:
 Site photos live in the **public** Supabase bucket `site-media` (created automatically); passport photos stay in the
 private `passport-photos` bucket. Content tables are created by the schema migration in `lib/db.ts`.
 
+## Passport photo editor
+
+On the registration form's photo step, members position their photo in a round frame that matches the card
+(drag, pinch/scroll or the slider to zoom; arrow keys and +/- also work) and the card preview updates live. The
+form uploads a 600×600 JPEG of exactly what's in the frame.
+
+The background is made white automatically on the member's device with Google MediaPipe (`lib/photo.ts`,
+`components/PhotoEditor.tsx`); the photo is never sent anywhere for this. The same pass finds the head and frames
+it passport-style. Members can switch the white background off to compare with the original.
+
+- First use downloads about 20 MB (the `selfie_multiclass_256x256` model from Google's storage, kept in the
+  browser's cache, plus the runtime). On data-saver or 2G connections it asks before downloading.
+- The runtime (Wasm) is served from `public/mediapipe/`, copied there from `node_modules` by
+  `scripts/copy-mediapipe.mjs` on every `npm install` (git-ignored, so run `npm install` after cloning).
+- Anyone standing right next to the member stays in the picture; ask for a photo of one person.
+
 ## Features
 
 - **Public:** portal landing page, registration with photo upload and year of study, payment, receipt, QR verify page.

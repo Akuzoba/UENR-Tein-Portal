@@ -43,3 +43,6 @@ next-env.d.ts
 
 # local database + uploaded photos
 /data
+
+# MediaPipe runtime, copied from node_modules on install
+/public/mediapipe
