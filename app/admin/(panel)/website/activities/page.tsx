@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { requirePermission } from "@/lib/admin";
 import { ChevronRight, EyeOff, Images } from "lucide-react";
 import { fmtDate } from "@/lib/config";
 import { listActivities } from "@/lib/site";
@@ -9,6 +10,7 @@ import { NewActivityForm } from "../forms";
 export const metadata = { title: "Activities – TEIN UENR Admin" };
 
 export default async function ActivitiesAdmin() {
+  await requirePermission("website.edit");
   const activities = await listActivities({ publishedOnly: false });
 
   return (

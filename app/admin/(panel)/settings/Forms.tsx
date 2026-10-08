@@ -1,9 +1,10 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState } from "react";
-import { Search, X } from "lucide-react";
+import { Search, ShieldCheck, X } from "lucide-react";
 import { searchPrograms } from "@/components/ProgramPicker";
-import { addAdmin, addPrograms, changePassword, removeProgram, updateFee, updateSignatory, type FormState } from "../../actions";
+import type { AdminSummary } from "@/lib/db";
+import { addAdmin, addPrograms, changePassword, removeProgram, setAdminActive, setAdminRole, updateFee, updateSignatory, type FormState } from "../../actions";
 
 function Status({ state }: { state: FormState }) {
   if (state.error) return <p className="rounded-md border-l-4 border-ndc-red bg-ndc-red/5 px-3 py-2 text-sm font-medium text-ndc-red">{state.error}</p>;
@@ -42,7 +43,9 @@ export function ChangePasswordForm() {
   );
 }
 
-export function AddAdminForm() {
+export type RoleOption = { key: string; label: string; about: string };
+
+export function AddAdminForm({ roles }: { roles: RoleOption[] }) {
   const [state, action, pending] = useActionState<FormState, FormData>(addAdmin, {});
   const ref = useResetOnSuccess(state);
   return (
@@ -50,10 +53,103 @@ export function AddAdminForm() {
       <div className="flex flex-wrap gap-2">
         <input name="username" required placeholder="Username" autoComplete="off" className="input mt-0 min-w-40 flex-1" />
         <input name="password" type="password" required minLength={8} placeholder="Temporary password" autoComplete="new-password" className="input mt-0 min-w-40 flex-1" />
+        <select name="role" required defaultValue="" aria-label="Role" className="input mt-0 w-auto min-w-44">
+          <option value="" disabled>Choose a role</option>
+          {roles.map((r) => (
+            <option key={r.key} value={r.key}>{r.label}</option>
+          ))}
+        </select>
         <button disabled={pending} className="btn btn-dark">{pending ? "Adding…" : "Add admin"}</button>
       </div>
       <Status state={state} />
     </form>
+  );
+}
+
+/** One admin in Settings: role, last sign-in, change role, deactivate or reactivate. */
+export function AdminRow({
+  admin: a,
+  added,
+  lastLogin,
+  isMe,
+  roles,
+}: {
+  admin: AdminSummary;
+  added: string;
+  lastLogin: string;
+  isMe: boolean;
+  roles: RoleOption[];
+}) {
+  const [roleState, roleAction, rolePending] = useActionState<FormState, FormData>(setAdminRole, {});
+  const [activeState, activeAction, activePending] = useActionState<FormState, FormData>(setAdminActive, {});
+  const [role, setRole] = useState<string>(a.role);
+  const disabled = a.disabled_at !== null;
+  const latest = activeState.error || activeState.ok ? activeState : roleState;
+  return (
+    <li className={`py-3 ${disabled ? "opacity-70" : ""}`}>
+      <div className="flex flex-wrap items-center gap-3">
+        <span className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold text-white uppercase ${disabled ? "bg-muted" : "bg-ndc-green"}`}>
+          {a.username[0]}
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="font-semibold">
+            {a.username}
+            {isMe && <span className="ml-2 text-xs font-normal text-muted">(you)</span>}
+          </div>
+          <div className="text-xs text-muted">Added {added} · Last sign-in {lastLogin}</div>
+        </div>
+        {disabled ? (
+          <span className="badge badge-pending">deactivated</span>
+        ) : a.must_change ? (
+          <span className="badge badge-pending">temporary password</span>
+        ) : (
+          <span className="badge badge-paid"><ShieldCheck className="h-3 w-3" /> active</span>
+        )}
+      </div>
+      <div className="mt-2 flex flex-wrap items-center gap-2 pl-12">
+        <form action={roleAction} className="flex items-center gap-2">
+          <input type="hidden" name="id" value={a.id} />
+          <select
+            name="role"
+            value={role}
+            onChange={(e) => setRole(e.target.value)}
+            disabled={isMe || disabled}
+            aria-label={`Role for ${a.username}`}
+            className="input mt-0 w-auto py-1.5 text-sm"
+          >
+            {roles.map((r) => (
+              <option key={r.key} value={r.key}>{r.label}</option>
+            ))}
+          </select>
+          {role !== a.role && (
+            <button disabled={rolePending} className="btn btn-dark px-3 py-1.5 text-sm">{rolePending ? "Saving…" : "Save role"}</button>
+          )}
+        </form>
+        {!isMe && (
+          <form
+            action={activeAction}
+            onSubmit={(e) => {
+              if (!disabled && !confirm(`Deactivate ${a.username}? They will be signed out and can't sign in until reactivated.`)) e.preventDefault();
+            }}
+          >
+            <input type="hidden" name="id" value={a.id} />
+            <input type="hidden" name="active" value={disabled ? "1" : "0"} />
+            <button
+              disabled={activePending}
+              className={`btn px-3 py-1.5 text-sm ${disabled ? "btn-ghost" : "btn-ghost text-ndc-red hover:bg-ndc-red/10"}`}
+            >
+              {activePending ? "Working…" : disabled ? "Reactivate" : "Deactivate"}
+            </button>
+          </form>
+        )}
+        {isMe && <span className="text-xs text-muted">Another super admin can change your role.</span>}
+      </div>
+      {(latest.error || latest.ok) && (
+        <div className="mt-2 pl-12">
+          <Status state={latest} />
+        </div>
+      )}
+    </li>
   );
 }
 

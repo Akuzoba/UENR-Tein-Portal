@@ -1,10 +1,10 @@
-import { isAdmin } from "@/lib/admin";
+import { hasPermission } from "@/lib/admin";
 import { getMember } from "@/lib/db";
 import { readPhoto } from "@/lib/storage";
 
-// Passport photos are private: only signed-in admins can load them directly.
+// Passport photos are private: only admins who can see members load them.
 export async function GET(_: Request, ctx: RouteContext<"/admin/photo/[id]">) {
-  if (!(await isAdmin())) return new Response("Unauthorized", { status: 401 });
+  if (!(await hasPermission("members.view"))) return new Response("Unauthorized", { status: 401 });
   const { id } = await ctx.params;
   const m = await getMember(id);
   const buf = m ? await readPhoto(m.photo_path) : null;

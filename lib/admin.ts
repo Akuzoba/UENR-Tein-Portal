@@ -3,6 +3,7 @@ import { cache } from "react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getAdminById, setting } from "./db";
+import { can, homeFor, type Permission } from "./roles";
 
 export const ADMIN_COOKIE = "ut_admin";
 const TTL = 60 * 60 * 12; // seconds
@@ -37,16 +38,30 @@ export const currentAdmin = cache(async () => {
   const given = Buffer.from(sig);
   if (expected.length !== given.length || !timingSafeEqual(expected, given)) return null;
   if (Number(exp) < Date.now() / 1000) return null;
-  return (await getAdminById(Number(id))) ?? null;
+  const admin = await getAdminById(Number(id));
+  // Deactivating an admin ends their session on the next request.
+  return admin && !admin.disabled_at ? admin : null;
 });
-
-export async function isAdmin() {
-  return (await currentAdmin()) !== null;
-}
 
 /** For pages and server actions: bounces to the login page when not signed in. */
 export async function requireAdmin() {
   const admin = await currentAdmin();
   if (!admin) redirect("/admin/login");
+  return admin;
+}
+
+/** True if the signed-in admin's role allows this. For route handlers, which answer with a status instead. */
+export async function hasPermission(permission: Permission) {
+  const admin = await currentAdmin();
+  return !!admin && can(admin.role, permission);
+}
+
+/**
+ * For pages and server actions: sign-in check plus a role check. An admin whose role doesn't allow this is sent
+ * to their own start page, so hand-typed URLs and stale forms can't reach what the menu hides.
+ */
+export async function requirePermission(permission: Permission) {
+  const admin = await requireAdmin();
+  if (!can(admin.role, permission)) redirect(homeFor(admin.role));
   return admin;
 }

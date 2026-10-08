@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { ChevronRight, Download, Printer } from "lucide-react";
+import { requirePermission } from "@/lib/admin";
 import { listMembers, memberTotals } from "@/lib/db";
+import { can } from "@/lib/roles";
 import { fmtDate, levelLabel, memberCode } from "@/lib/config";
 import PageTransition from "@/components/PageTransition";
 import PageHeader from "@/components/admin/PageHeader";
@@ -9,6 +11,7 @@ import MemberFilters from "@/components/admin/MemberFilters";
 export const metadata = { title: "Members – TEIN UENR Admin" };
 
 export default async function AdminMembers({ searchParams }: PageProps<"/admin/members">) {
+  const admin = await requirePermission("members.view");
   const sp = await searchParams;
   const q = String(sp.q ?? "").trim();
   const status = String(sp.status ?? "");
@@ -21,8 +24,8 @@ export default async function AdminMembers({ searchParams }: PageProps<"/admin/m
     <PageTransition>
       <div>
         <PageHeader title="Members" sub={`${members.length} shown${q ? ` for “${q}”` : ""}`}>
-          <a href={`/admin/export?${qs}`} className="btn btn-ghost"><Download className="h-4 w-4" /> Export CSV</a>
-          <Link href={`/admin/cards?${new URLSearchParams({ q })}`} className="btn btn-dark"><Printer className="h-4 w-4" /> Print cards</Link>
+          {can(admin.role, "members.export") && <a href={`/admin/export?${qs}`} className="btn btn-ghost"><Download className="h-4 w-4" /> Export CSV</a>}
+          {can(admin.role, "cards.print") && <Link href={`/admin/cards?${new URLSearchParams({ q })}`} className="btn btn-dark"><Printer className="h-4 w-4" /> Print cards</Link>}
         </PageHeader>
 
         <div className="mt-6">

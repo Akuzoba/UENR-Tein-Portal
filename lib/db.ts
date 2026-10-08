@@ -3,6 +3,7 @@ import postgres from "postgres";
 import { randomBytes } from "crypto";
 import { hashPassword } from "./password";
 import { DEFAULT_FEE, DEFAULT_PROGRAMS } from "./config";
+import type { Role } from "./roles";
 
 export const DEFAULT_ADMIN = { username: "admin", password: process.env.ADMIN_INITIAL_PASSWORD || "Admin@123" };
 
@@ -34,16 +35,19 @@ export type Admin = {
   id: number;
   username: string;
   password_hash: string;
+  role: Role;
   must_change: number;
   failed_logins: number;
   locked_until: string | null;
+  disabled_at: string | null; // deactivated admins can't sign in; their history stays
+  last_login_at: string | null;
   created_at: string;
 };
 
 /* ------------------------------------------------------------------ connection + schema */
 
 // Bump when SCHEMA changes; the app applies it automatically on the next cold start.
-const SCHEMA_VERSION = "3";
+const SCHEMA_VERSION = "4";
 const SCHEMA = `
 create sequence if not exists member_no_seq;
 create table if not exists members (
@@ -120,6 +124,38 @@ create index if not exists activity_photos_activity_idx on activity_photos (acti
 alter table executives enable row level security;
 alter table activities enable row level security;
 alter table activity_photos enable row level security;
+-- v4: admin roles (see lib/roles.ts) and the activity log.
+-- Admins that existed before roles keep full access: they become super admins.
+alter table admins add column if not exists role text not null default 'super_admin';
+alter table admins alter column role set default 'membership';
+alter table admins drop constraint if exists admins_role_check;
+alter table admins add constraint admins_role_check check (role in ('super_admin', 'finance', 'membership', 'content'));
+alter table admins add column if not exists disabled_at timestamptz;
+alter table admins add column if not exists last_login_at timestamptz;
+create table if not exists audit_log (
+  id bigserial primary key,
+  at timestamptz not null default now(),
+  admin_id integer, -- null for the system (payment gateways) and unknown usernames
+  actor text not null, -- username at the time, so the entry survives renames and deactivation
+  action text not null, -- e.g. member.updated, see lib/audit.ts
+  target_type text,
+  target_id text,
+  summary text not null,
+  details jsonb,
+  ip text
+);
+create index if not exists audit_log_at_idx on audit_log (at desc);
+create index if not exists audit_log_target_idx on audit_log (target_type, target_id, at desc);
+alter table audit_log enable row level security;
+-- Append-only: entries can't be edited or removed, not even by the app.
+create or replace function audit_log_append_only() returns trigger language plpgsql as $$
+begin
+  raise exception 'audit_log is append-only';
+end $$;
+drop trigger if exists audit_log_no_change on audit_log;
+create trigger audit_log_no_change before update or delete on audit_log for each row execute function audit_log_append_only();
+drop trigger if exists audit_log_no_truncate on audit_log;
+create trigger audit_log_no_truncate before truncate on audit_log for each statement execute function audit_log_append_only();
 `;
 
 type Sql = postgres.Sql;
@@ -151,8 +187,8 @@ async function migrate(sql: Sql) {
   // First run: create the default admin so there is always a way in, and a session-signing secret.
   const [{ n }] = await sql<{ n: number }[]>`select count(*)::int as n from admins`;
   if (n === 0) {
-    await sql`insert into admins (username, password_hash, must_change)
-              values (${DEFAULT_ADMIN.username}, ${hashPassword(DEFAULT_ADMIN.password)}, 1)
+    await sql`insert into admins (username, password_hash, must_change, role)
+              values (${DEFAULT_ADMIN.username}, ${hashPassword(DEFAULT_ADMIN.password)}, 1, 'super_admin')
               on conflict do nothing`;
   }
   await sql`insert into settings (key, value) values ('session_secret', ${randomBytes(32).toString("hex")})
@@ -281,16 +317,21 @@ export async function setDue(id: string, minor: number) {
   await sql`update members set due_amount = ${minor} where id = ${id} and payment_status = 'pending'`;
 }
 
-/** Atomic + idempotent: safe to call from the callback page, the webhook and the admin panel at the same time. */
+/**
+ * Atomic + idempotent: safe to call from the callback page, the webhook and the admin panel at the same time.
+ * Returns true only for the call that actually marked the member paid, so callers log it once.
+ */
 export async function markPaid(id: string, ref: string, amount: number, method: string) {
   const sql = await db();
-  await sql`
+  const rows = await sql`
     update members set payment_status = 'paid', payment_method = ${method}, paystack_ref = ${ref},
       amount_paid = ${amount}, paid_at = now(), member_no = nextval('member_no_seq'),
       -- Card period (same rule as yearsLeft in lib/config.ts), fixed now so later rule changes don't alter issued cards.
       valid_from = extract(year from now())::int,
       valid_to = extract(year from now())::int + greatest(1, coalesce(program_years - level, 1))
-    where id = ${id} and payment_status <> 'paid'`;
+    where id = ${id} and payment_status <> 'paid'
+    returning id`;
+  return rows.length > 0;
 }
 
 export type MemberFilter = { q?: string; status?: string; limit?: number };
@@ -358,23 +399,50 @@ export async function getAdminById(id: number) {
   return a;
 }
 
+export type AdminSummary = Pick<Admin, "id" | "username" | "role" | "must_change" | "disabled_at" | "last_login_at" | "created_at">;
+
+/** Active admins first, then deactivated ones. */
 export async function listAdmins() {
   const sql = await db();
-  return sql<Pick<Admin, "id" | "username" | "must_change" | "created_at">[]>`
-    select id, username, must_change, created_at from admins order by id`;
+  return sql<AdminSummary[]>`
+    select id, username, role, must_change, disabled_at, last_login_at, created_at from admins
+    order by disabled_at is not null, id`;
 }
 
-/** Returns false if the username is taken. */
-export async function createAdmin(username: string, passwordHash: string) {
+/** Returns the new admin's id, or null if the username is taken. */
+export async function createAdmin(username: string, passwordHash: string, role: Role) {
   const sql = await db();
-  const rows = await sql`insert into admins (username, password_hash, must_change) values (${username}, ${passwordHash}, 1)
-                         on conflict do nothing returning id`;
-  return rows.length > 0;
+  const [row] = await sql<{ id: number }[]>`
+    insert into admins (username, password_hash, must_change, role) values (${username}, ${passwordHash}, 1, ${role})
+    on conflict do nothing returning id`;
+  return row?.id ?? null;
 }
 
-export async function deleteAdmin(id: number) {
+/**
+ * Changes an admin's role and/or deactivates or reactivates them. Refuses ("last_super") when the change would
+ * leave no active super admin, so nobody can lock everyone out of admin management.
+ */
+export async function changeAdmin(id: number, patch: { role?: Role; disabled?: boolean }) {
   const sql = await db();
-  await sql`delete from admins where id = ${id}`;
+  return sql.begin(async (tx) => {
+    await tx`select pg_advisory_xact_lock(724520)`; // two super admins demoting each other at once
+    const [before] = await tx<Admin[]>`select * from admins where id = ${id}`;
+    if (!before) return { result: "not_found" as const };
+    const role = patch.role ?? before.role;
+    const disabled = patch.disabled ?? before.disabled_at !== null;
+    const wasActiveSuper = before.role === "super_admin" && before.disabled_at === null;
+    if (wasActiveSuper && (role !== "super_admin" || disabled)) {
+      const [{ n }] = await tx<{ n: number }[]>`
+        select count(*)::int as n from admins where role = 'super_admin' and disabled_at is null and id <> ${id}`;
+      if (n === 0) return { result: "last_super" as const, before };
+    }
+    await tx`update admins set role = ${role},
+               disabled_at = case when ${disabled} then coalesce(disabled_at, now()) else null end,
+               failed_logins = case when ${disabled} then failed_logins else 0 end,
+               locked_until = case when ${disabled} then locked_until else null end
+             where id = ${id}`;
+    return { result: "ok" as const, before };
+  });
 }
 
 export async function setAdminPassword(id: number, passwordHash: string) {
@@ -382,15 +450,22 @@ export async function setAdminPassword(id: number, passwordHash: string) {
   await sql`update admins set password_hash = ${passwordHash}, must_change = 0 where id = ${id}`;
 }
 
-/** Login throttling: 5 wrong passwords lock the account for 15 minutes. */
+/**
+ * Login throttling: 5 wrong passwords lock the account for 15 minutes.
+ * Returns true when this wrong password is the one that locked the account.
+ */
 export async function recordLogin(id: number, ok: boolean) {
   const sql = await db();
-  if (ok) await sql`update admins set failed_logins = 0, locked_until = null where id = ${id}`;
-  else
-    // An expired lock starts a fresh count.
-    await sql`
-      with s as (select case when locked_until < now() then 1 else failed_logins + 1 end as fails from admins where id = ${id})
-      update admins set failed_logins = s.fails,
-        locked_until = case when s.fails >= 5 then now() + interval '15 minutes' else null end
-      from s where admins.id = ${id}`;
+  if (ok) {
+    await sql`update admins set failed_logins = 0, locked_until = null, last_login_at = now() where id = ${id}`;
+    return false;
+  }
+  // An expired lock starts a fresh count.
+  const [row] = await sql<{ fails: number }[]>`
+    with s as (select case when locked_until < now() then 1 else failed_logins + 1 end as fails from admins where id = ${id})
+    update admins set failed_logins = s.fails,
+      locked_until = case when s.fails >= 5 then now() + interval '15 minutes' else null end
+    from s where admins.id = ${id}
+    returning s.fails`;
+  return row?.fails === 5;
 }

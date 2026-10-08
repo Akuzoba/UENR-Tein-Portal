@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import { isAdmin } from "@/lib/admin";
+import { currentAdmin } from "@/lib/admin";
+import { homeFor } from "@/lib/roles";
 import Logo from "@/components/brand/Logo";
 import PageTransition from "@/components/PageTransition";
 import LoginForm from "./LoginForm";
@@ -10,7 +11,8 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Admin login – TEIN UENR" };
 
 export default async function LoginPage() {
-  if (await isAdmin()) redirect("/admin");
+  const admin = await currentAdmin();
+  if (admin) redirect(homeFor(admin.role));
   return (
     <PageTransition>
       <main className="flex flex-1 flex-col items-center justify-center px-5 py-16">

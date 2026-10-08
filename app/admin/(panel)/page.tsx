@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { requirePermission } from "@/lib/admin";
 import { listMembers, memberTotals, membersByProgram, registrationsPerDay } from "@/lib/db";
+import { can } from "@/lib/roles";
 import { CURRENCY, fmtDate } from "@/lib/config";
 import PageTransition from "@/components/PageTransition";
 import PageHeader from "@/components/admin/PageHeader";
@@ -12,6 +14,7 @@ export const metadata = { title: "Overview – TEIN UENR Admin" };
 const DAYS = 14;
 
 export default async function Overview() {
+  const admin = await requirePermission("dashboard.view");
   const [t, perDay, programRows, recent] = await Promise.all([
     memberTotals(),
     registrationsPerDay(DAYS),
@@ -49,7 +52,7 @@ export default async function Overview() {
       <div>
         <PageHeader title="Overview" sub={`${fmtDate(new Date())} · ${t.today} new registration${t.today === 1 ? "" : "s"} today`}>
           <Link href="/admin/members" className="btn btn-ghost">All members</Link>
-          <Link href="/admin/cards" className="btn btn-dark">Print cards</Link>
+          {can(admin.role, "cards.print") && <Link href="/admin/cards" className="btn btn-dark">Print cards</Link>}
         </PageHeader>
 
         <div className="mt-6 grid grid-cols-2 gap-3 xl:grid-cols-4">

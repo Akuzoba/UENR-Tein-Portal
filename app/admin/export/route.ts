@@ -1,4 +1,6 @@
-import { isAdmin } from "@/lib/admin";
+import { currentAdmin } from "@/lib/admin";
+import { logAudit } from "@/lib/audit";
+import { can } from "@/lib/roles";
 import { listMembers } from "@/lib/db";
 import { SITE_URL, cardPeriod, fmtPeriod, memberCode, methodLabel } from "@/lib/config";
 
@@ -9,11 +11,15 @@ const esc = (v: unknown) => {
 };
 
 export async function GET(req: Request) {
-  if (!(await isAdmin())) return new Response("Unauthorized", { status: 401 });
+  const admin = await currentAdmin();
+  if (!admin || !can(admin.role, "members.export")) return new Response("Unauthorized", { status: 401 });
   const url = new URL(req.url);
-  const members = await listMembers({
-    q: (url.searchParams.get("q") ?? "").trim(),
-    status: url.searchParams.get("status") ?? "",
+  const q = (url.searchParams.get("q") ?? "").trim();
+  const status = url.searchParams.get("status") ?? "";
+  const members = await listMembers({ q, status });
+  // The file holds phone numbers and dates of birth, so every download is logged.
+  await logAudit({ id: admin.id, username: admin.username }, "member.exported", `Exported ${members.length} member${members.length === 1 ? "" : "s"} to CSV${q ? ` matching “${q}”` : ""}${status ? ` (${status})` : ""}`, {
+    details: { count: members.length, search: q || null, status: status || null },
   });
 
   const header = ["Membership No.", "Name", "Phone", "Email", "Program", "Programme years", "Level", "Card period", "Study mode", "Gender", "DOB", "Status", "Method", "Amount", "Reference", "Paid at", "Registered", "Receipt link"];

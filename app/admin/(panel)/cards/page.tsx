@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Printer } from "lucide-react";
+import { requirePermission } from "@/lib/admin";
 import { getSignatory, listMembers } from "@/lib/db";
 import { cardData } from "@/lib/card";
 import { CardBack, CardFront, type CardData } from "@/components/MemberCard";
@@ -13,6 +14,7 @@ export const metadata = { title: "Print cards – TEIN UENR Admin" };
 const MAX = 100;
 
 export default async function BulkCards({ searchParams }: PageProps<"/admin/cards">) {
+  await requirePermission("cards.print");
   const sp = await searchParams;
   const q = String(sp.q ?? "").trim();
   const paid = await listMembers({ q, status: "paid" });
@@ -35,7 +37,7 @@ export default async function BulkCards({ searchParams }: PageProps<"/admin/card
             </>
           }
         >
-          <PrintButton disabled={cards.length === 0} />
+          <PrintButton search={q} memberIds={cards.map((c) => c.id)} />
         </PageHeader>
 
         <div className="mt-6">
