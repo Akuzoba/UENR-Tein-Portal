@@ -11,6 +11,7 @@ export type Member = {
   id: string;
   member_no: number | null;
   name: string;
+  student_id: string | null; // reference or index number, normalised (see normalizeStudentId)
   email: string | null;
   dob: string | null; // YYYY-MM-DD
   gender: string | null;
@@ -47,7 +48,7 @@ export type Admin = {
 /* ------------------------------------------------------------------ connection + schema */
 
 // Bump when SCHEMA changes; the app applies it automatically on the next cold start.
-const SCHEMA_VERSION = "4";
+const SCHEMA_VERSION = "5";
 const SCHEMA = `
 create sequence if not exists member_no_seq;
 create table if not exists members (
@@ -156,6 +157,10 @@ drop trigger if exists audit_log_no_change on audit_log;
 create trigger audit_log_no_change before update or delete on audit_log for each row execute function audit_log_append_only();
 drop trigger if exists audit_log_no_truncate on audit_log;
 create trigger audit_log_no_truncate before truncate on audit_log for each statement execute function audit_log_append_only();
+-- v5: student number (reference or index number, see isStudentId in lib/config.ts). Optional for members who
+-- registered before it existed; one member per number.
+alter table members add column if not exists student_id text;
+create unique index if not exists members_student_id_idx on members (student_id) where student_id is not null;
 `;
 
 type Sql = postgres.Sql;
@@ -281,9 +286,26 @@ export async function findMemberByPhone(phone: string) {
   return m;
 }
 
+export async function findMemberByStudentId(studentId: string) {
+  const sql = await db();
+  const [m] = await sql<Pick<Member, "id" | "payment_status">[]>`select id, payment_status from members where student_id = ${studentId}`;
+  return m;
+}
+
+/** Frees a student number held by an unpaid registration, so the student can register again from another phone. */
+export async function releaseStudentId(memberId: string) {
+  const sql = await db();
+  await sql`update members set student_id = null where id = ${memberId} and payment_status <> 'paid'`;
+}
+
+/** True when a database error is the one-member-per-student-number rule. */
+export const isStudentIdTaken = (e: unknown) =>
+  (e as { code?: string; constraint_name?: string })?.code === "23505" &&
+  (e as { constraint_name?: string }).constraint_name === "members_student_id_idx";
+
 export type NewMember = Pick<
   Member,
-  "id" | "name" | "email" | "dob" | "gender" | "program" | "period" | "program_years" | "level" | "phone" | "photo_path"
+  "id" | "name" | "student_id" | "email" | "dob" | "gender" | "program" | "period" | "program_years" | "level" | "phone" | "photo_path"
 >;
 
 /** Creates a registration, or refreshes the details of an unpaid one. */
@@ -291,12 +313,12 @@ export async function upsertMember(m: NewMember) {
   const sql = await db();
   await sql`
     insert into members ${sql(m)}
-    on conflict (id) do update set name = excluded.name, email = excluded.email, dob = excluded.dob,
+    on conflict (id) do update set name = excluded.name, student_id = excluded.student_id, email = excluded.email, dob = excluded.dob,
       gender = excluded.gender, program = excluded.program, period = excluded.period,
       program_years = excluded.program_years, level = excluded.level`;
 }
 
-export type MemberDetails = Pick<Member, "name" | "phone" | "email" | "dob" | "gender" | "program" | "period" | "program_years" | "level">;
+export type MemberDetails = Pick<Member, "name" | "student_id" | "phone" | "email" | "dob" | "gender" | "program" | "period" | "program_years" | "level">;
 
 /** Saves edited details. For a paid member, the card end year follows the corrected programme length / level. */
 export async function updateMemberDetails(id: string, d: MemberDetails) {
@@ -344,7 +366,7 @@ export async function listMembers({ q, status, limit = 5000 }: MemberFilter = {}
   // A full membership number (BR/UENR/26/0000076) matches on its running number.
   const numLike = esc((q ?? "").split("/").pop()!);
   const bySearch = q
-    ? sql`and (name ilike ${like} or phone ilike ${like} or program ilike ${like} or email ilike ${like}
+    ? sql`and (name ilike ${like} or phone ilike ${like} or program ilike ${like} or email ilike ${like} or student_id ilike ${like}
               or lpad(member_no::text, 7, '0') like ${numLike})`
     : sql``;
   return sql<Member[]>`select * from members where true ${byStatus} ${bySearch} order by created_at desc limit ${limit}`;

@@ -158,7 +158,16 @@ it passport-style. Members can switch the white background off to compare with t
 
 ## Features
 
-- **Public:** portal landing page, registration with photo upload and year of study, payment, receipt, QR verify page.
+- **Public:** portal landing page, registration with photo upload, year of study and student number, payment, receipt,
+  QR verify page.
+
+## Student number
+
+Registration asks for the student's reference number (e.g. `UA2301542`) or index number (e.g. `UEB3509323`): 2–4
+letters then 6–9 digits, stored uppercase without spaces (`isStudentId` in `lib/config.ts`). Each number belongs to
+one member. A number held by an unpaid registration moves to the newest one (the student may have switched phones);
+a number held by a paid member is refused. Members who registered before the field existed have none; admins can add
+it on the member's page. It shows on the receipt, in admin search and in the CSV export, not on the card.
 - **Admin:** role-based access, activity log, stats, search/filter members, member details and editing, view/download/print any member's card,
   mark cash payments as paid, delete members, bulk print cards, CSV export, admin users, roles and passwords.
 

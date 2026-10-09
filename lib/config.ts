@@ -21,6 +21,14 @@ export const PROGRAM_YEAR_OPTIONS = [2, 3, 4, 5, 6];
 
 export const GENDERS = ["Male", "Female"];
 
+/**
+ * Student number: the reference number (e.g. UA2301542) or the index number (e.g. UEB3509323).
+ * Stored uppercase without spaces, dashes or slashes, and unique across members.
+ */
+export const normalizeStudentId = (v: string) => v.toUpperCase().replace(/[\s/-]/g, "");
+export const isStudentId = (v: string) => /^[A-Z]{2,4}\d{6,9}$/.test(v);
+export const STUDENT_ID_ERROR = "Enter your student reference number (e.g. UA2301542) or index number (e.g. UEB3509323)";
+
 // Public address of the main site. On Vercel it falls back to the production domain.
 export const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ||

@@ -5,12 +5,13 @@ import { ArrowLeft, ArrowRight, Camera, Check, Loader2, Lock } from "lucide-reac
 import { CardFront, type CardData } from "@/components/MemberCard";
 import PhotoEditor, { type PhotoState } from "@/components/PhotoEditor";
 import ProgramPicker from "@/components/ProgramPicker";
-import { INSTITUTION, PROGRAM_TYPES, PROGRAM_YEAR_OPTIONS, levelLabel, yearsLeft } from "@/lib/config";
+import { INSTITUTION, PROGRAM_TYPES, PROGRAM_YEAR_OPTIONS, STUDENT_ID_ERROR, isStudentId, levelLabel, normalizeStudentId, yearsLeft } from "@/lib/config";
 
 const STEPS = ["Your details", "Studies", "Photo", "Review"];
 
 type Form = {
   name: string;
+  student_id: string;
   phone: string;
   email: string;
   program: string;
@@ -21,7 +22,7 @@ type Form = {
   program_years: string;
   level: string;
 };
-const EMPTY: Form = { name: "", phone: "", email: "", program: "", period: "", gender: "", dob: "", program_type: "", program_years: "", level: "" };
+const EMPTY: Form = { name: "", student_id: "", phone: "", email: "", program: "", period: "", gender: "", dob: "", program_type: "", program_years: "", level: "" };
 
 const fmtDob = (v: string) =>
   v ? new Date(v).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "";
@@ -66,6 +67,7 @@ export default function RegisterWizard({ programs, periods, genders, fee, testMo
       if (f.email && !/^\S+@\S+\.\S+$/.test(f.email)) return "Enter a valid email or leave it empty";
     }
     if (s === 1) {
+      if (!isStudentId(normalizeStudentId(f.student_id))) return STUDENT_ID_ERROR;
       if (!f.program_years) return f.program_type === "Other" ? "Select how many years your programme takes" : "Select your programme type";
       if (!f.level) return "Select your current level";
       if (!f.period) return "Select your study mode";
@@ -202,6 +204,20 @@ export default function RegisterWizard({ programs, periods, genders, fee, testMo
             {step === 1 && (
               <>
                 <StepTitle title="Your studies" sub="Your level decides how long your card is valid: until you complete your programme." />
+                <label className="field">
+                  Student reference or index number *
+                  <input
+                    value={f.student_id}
+                    onChange={(e) => setF({ ...f, student_id: e.target.value.toUpperCase() })}
+                    onBlur={() => setF({ ...f, student_id: normalizeStudentId(f.student_id) })}
+                    autoCapitalize="characters"
+                    autoComplete="off"
+                    spellCheck={false}
+                    placeholder="e.g. UA2301542 or UEB3509323"
+                    className="input font-mono tracking-wide"
+                  />
+                  <span className="mt-1 block text-xs font-normal text-muted">On your student ID card or admission letter. Either number works.</span>
+                </label>
                 <div>
                   <span className="field">Programme type *</span>
                   <div className="mt-2 grid grid-cols-3 gap-2">
@@ -332,6 +348,7 @@ export default function RegisterWizard({ programs, periods, genders, fee, testMo
                       ["Name", f.name, 0],
                       ["Phone", f.phone, 0],
                       ["Email", f.email || "—", 0],
+                      ["Student number", normalizeStudentId(f.student_id), 1],
                       ["Programme", f.program || "—", 1],
                       ["Programme type", f.program_type ? `${f.program_type} · ${years} years` : "—", 1],
                       ["Level", levelLabel(level || null), 1],

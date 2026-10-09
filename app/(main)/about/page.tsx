@@ -80,7 +80,7 @@ export default async function About() {
           <div className="stripes absolute inset-0" />
           <div className="relative mx-auto flex max-w-6xl flex-col items-start justify-between gap-6 px-5 py-14 sm:flex-row sm:items-center">
             <h2 className="headline text-[clamp(2.4rem,5vw,3.75rem)]">Ready to join us?</h2>
-            <Link href={portalHref("/portal/register")} className="btn group bg-white px-6 py-3.5 text-base text-ink hover:bg-paper">
+            <Link href={portalHref("/portal/register")} target="_blank" rel="noopener" className="btn group bg-white px-6 py-3.5 text-base text-ink hover:bg-paper">
               Become a member <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Link>
           </div>

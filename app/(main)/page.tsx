@@ -42,7 +42,7 @@ export default async function Home() {
               </h1>
               <p className="anim-rise mt-6 max-w-lg text-lg leading-relaxed text-pretty text-white/70" style={{ animationDelay: "520ms" }}>{c.intro}</p>
               <div className="anim-rise mt-8 flex flex-wrap gap-3" style={{ animationDelay: "640ms" }}>
-                <Link href={portalHref("/portal/register")} className="btn btn-primary group px-6 py-3.5 text-base shadow-[0_10px_30px_-8px_rgba(210,35,42,.7)]">
+                <Link href={portalHref("/portal/register")} target="_blank" rel="noopener" className="btn btn-primary group px-6 py-3.5 text-base shadow-[0_10px_30px_-8px_rgba(210,35,42,.7)]">
                   Become a member <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
                 </Link>
                 <Link href="/about" className="btn border border-white/25 px-6 py-3.5 text-base text-white hover:border-white hover:bg-white hover:text-ink">Who we are</Link>
@@ -163,7 +163,7 @@ export default async function Home() {
               <h2 className="headline text-[clamp(2.6rem,6vw,4.5rem)]">{year} MEMBERSHIP REGISTRATION IS OPEN</h2>
               <p className="mt-3 text-lg text-white/85">Register once, pay your dues online and get your official membership card.</p>
             </Reveal>
-            <Link href={portalHref("/portal/register")} className="btn group shrink-0 bg-white px-7 py-4 text-base text-ink shadow-[0_14px_30px_-10px_rgba(0,0,0,.45)] transition-transform hover:-translate-y-0.5 hover:bg-paper">
+            <Link href={portalHref("/portal/register")} target="_blank" rel="noopener" className="btn group shrink-0 bg-white px-7 py-4 text-base text-ink shadow-[0_14px_30px_-10px_rgba(0,0,0,.45)] transition-transform hover:-translate-y-0.5 hover:bg-paper">
               Register now <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
             </Link>
           </div>

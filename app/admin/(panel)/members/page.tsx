@@ -58,7 +58,13 @@ export default async function AdminMembers({ searchParams }: PageProps<"/admin/m
                           <img src={`/admin/photo/${m.id}`} alt="" loading="lazy" className="h-10 w-10 rounded-full bg-paper object-cover" />
                           <span>
                             <span className="block font-semibold group-hover:underline">{m.name}</span>
-                            {m.email && <span className="block text-xs text-muted">{m.email}</span>}
+                            {(m.student_id || m.email) && (
+                              <span className="block text-xs text-muted">
+                                {m.student_id && <span className="font-mono">{m.student_id}</span>}
+                                {m.student_id && m.email && " · "}
+                                {m.email}
+                              </span>
+                            )}
                           </span>
                         </Link>
                       </td>
@@ -92,7 +98,7 @@ export default async function AdminMembers({ searchParams }: PageProps<"/admin/m
                   <img src={`/admin/photo/${m.id}`} alt="" loading="lazy" className="h-11 w-11 rounded-full bg-paper object-cover" />
                   <div className="min-w-0 flex-1">
                     <div className="truncate font-semibold">{m.name}</div>
-                    <div className="truncate text-xs text-muted">{m.phone} · {levelLabel(m.level)}</div>
+                    <div className="truncate text-xs text-muted">{[m.student_id, m.phone, levelLabel(m.level)].filter(Boolean).join(" · ")}</div>
                   </div>
                   <span className={`badge badge-${m.payment_status}`}>{m.payment_status}</span>
                 </Link>

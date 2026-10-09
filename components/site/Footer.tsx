@@ -59,7 +59,7 @@ export default async function Footer({ dark = false }: { dark?: boolean }) {
           <span>© {new Date().getFullYear()} TEIN UENR</span>
           <span className="flex gap-4">
             <span>Payments by Paystack</span>
-            <Link href="/admin" className="hover:text-ink">Executive login</Link>
+            <Link href={portalHref("/admin")} className="hover:text-ink">Executive login</Link>
           </span>
         </div>
       </div>
@@ -105,7 +105,12 @@ function DarkFooter({ c, socials }: { c: SiteContent; socials: ReturnType<typeof
             <ul className="mt-4 space-y-2.5 text-sm font-semibold text-white/65">
               {links.map(([href, label]) => (
                 <li key={href}>
-                  <Link href={href} className="group inline-flex items-center gap-2 transition-colors hover:text-white">
+                  <Link
+                    href={href}
+                    // The dark footer is the main site's: its portal links open the portal in a new tab, like "Join TEIN".
+                    {...(title === "Membership" ? { target: "_blank", rel: "noopener" } : {})}
+                    className="group inline-flex items-center gap-2 transition-colors hover:text-white"
+                  >
                     <span className="h-px w-0 bg-ndc-red transition-all duration-300 group-hover:w-4" />
                     {label}
                   </Link>
@@ -126,7 +131,7 @@ function DarkFooter({ c, socials }: { c: SiteContent; socials: ReturnType<typeof
           <span>© {new Date().getFullYear()} TEIN UENR</span>
           <span className="flex gap-4">
             <span>Payments by Paystack</span>
-            <Link href="/admin" className="hover:text-white">Executive login</Link>
+            <Link href={portalHref("/admin")} className="hover:text-white">Executive login</Link>
           </span>
         </div>
       </div>

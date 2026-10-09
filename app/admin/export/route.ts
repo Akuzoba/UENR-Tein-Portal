@@ -22,11 +22,12 @@ export async function GET(req: Request) {
     details: { count: members.length, search: q || null, status: status || null },
   });
 
-  const header = ["Membership No.", "Name", "Phone", "Email", "Program", "Programme years", "Level", "Card period", "Study mode", "Gender", "DOB", "Status", "Method", "Amount", "Reference", "Paid at", "Registered", "Receipt link"];
+  const header = ["Membership No.", "Name", "Student number", "Phone", "Email", "Program", "Programme years", "Level", "Card period", "Study mode", "Gender", "DOB", "Status", "Method", "Amount", "Reference", "Paid at", "Registered", "Receipt link"];
   const rows = members.map((m) =>
     [
       m.member_no ? memberCode(m.member_no, m.paid_at) : "",
       m.name,
+      m.student_id,
       m.phone,
       m.email,
       m.program,

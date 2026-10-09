@@ -51,7 +51,7 @@ export default async function MemberPage({ params }: PageProps<"/admin/members/[
               <h1 className="headline text-4xl sm:text-5xl">{m.name}</h1>
               <span className={`badge badge-${m.payment_status}`}>{m.payment_status}</span>
             </div>
-            <p className="mt-1 text-sm text-muted">{[m.program, m.level && levelLabel(m.level), m.program_years && `${m.program_years}-year programme`, m.period, m.phone].filter(Boolean).join(" · ")}</p>
+            <p className="mt-1 text-sm text-muted">{[m.student_id, m.program, m.level && levelLabel(m.level), m.program_years && `${m.program_years}-year programme`, m.period, m.phone].filter(Boolean).join(" · ")}</p>
             {m.member_no && <p className="mt-2 font-mono text-sm font-semibold">{memberCode(m.member_no, m.paid_at)}</p>}
           </div>
           {card && <CopyLink url={portalUrl(`/portal/receipt/${m.id}`)} />}
