@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { currentAdmin, endSession, requireAdmin, requirePermission, startSession } from "@/lib/admin";
 import { diff, logAudit } from "@/lib/audit";
-import { fmtMoney, memberCode } from "@/lib/config";
+import { STUDENT_ID_ERROR, fmtMoney, isStudentId, memberCode, normalizeStudentId } from "@/lib/config";
 import {
   changeAdmin,
   createAdmin,
@@ -14,6 +14,7 @@ import {
   getMember,
   getPrograms,
   getSignatory,
+  isStudentIdTaken,
   markPaid,
   recordLogin,
   setAdminPassword,
@@ -172,8 +173,12 @@ export async function updateMember(_: FormState, form: FormData): Promise<FormSt
   const programYears = num("program_years");
   const level = num("level");
   if (programYears && level && level > programYears) return { error: "Level can't be higher than the programme length." };
+  // Optional here: members who registered before the field existed may not have one yet.
+  const studentId = normalizeStudentId(String(form.get("student_id") ?? "")) || null;
+  if (studentId && !isStudentId(studentId)) return { error: `${STUDENT_ID_ERROR}, or leave it empty.` };
   const details = {
     name,
+    student_id: studentId,
     phone,
     email: opt("email"),
     dob: opt("dob"),
@@ -185,8 +190,8 @@ export async function updateMember(_: FormState, form: FormData): Promise<FormSt
   };
   try {
     await updateMemberDetails(id, details);
-  } catch {
-    return { error: "Another member already uses that phone number." };
+  } catch (e) {
+    return { error: isStudentIdTaken(e) ? "Another member already has that student number." : "Another member already uses that phone number." };
   }
   const changes = diff(before, details);
   if (Object.keys(changes).length) {
@@ -211,6 +216,7 @@ export async function deleteMember(form: FormData) {
       target: memberTarget(id),
       details: {
         name: m.name,
+        student_id: m.student_id,
         phone: m.phone,
         program: m.program,
         payment_status: m.payment_status,

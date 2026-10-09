@@ -39,6 +39,7 @@ export default async function ReceiptPage({ params }: PageProps<"/portal/receipt
   const qr = await QRCode.toDataURL(portalUrl(`/verify/${m.id}`), { margin: 1, width: 240 });
   const rows: [string, string][] = [
     ["Received from", m.name],
+    ...(m.student_id ? [["Student number", m.student_id] as [string, string]] : []),
     ["Phone", m.phone],
     ["Membership No.", memberCode(m.member_no, m.paid_at)],
     ["Programme", [m.program, levelLabel(m.level)].filter((v) => v && v !== "—").join(" · ") || "—"],

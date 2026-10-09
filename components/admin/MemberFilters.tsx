@@ -58,7 +58,7 @@ export default function MemberFilters({ base, q, status, counts }: Props) {
       )}
       <div className="relative flex-1">
         <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted" />
-        <input value={value} onChange={(e) => setValue(e.target.value)} placeholder="Search name, phone, email, programme or member no." className="input mt-0 pr-10 pl-9" />
+        <input value={value} onChange={(e) => setValue(e.target.value)} placeholder="Search name, student number, phone, email, programme or member no." className="input mt-0 pr-10 pl-9" />
         <span className="absolute top-1/2 right-3 -translate-y-1/2">
           {pending ? (
             <Loader2 className="h-4 w-4 animate-spin text-muted" />

@@ -7,7 +7,10 @@ import { ArrowRight } from "lucide-react";
 import Logo from "../brand/Logo";
 import { mainHref, portalHref } from "@/lib/config";
 
-export type NavLink = { href: string; label: string };
+/** `newTab` opens the link in a new tab (the main site's buttons into the portal). */
+export type NavLink = { href: string; label: string; newTab?: boolean };
+
+const tabProps = (l: NavLink) => (l.newTab ? { target: "_blank", rel: "noopener" } : {});
 
 export const MAIN_NAV: NavLink[] = [
   { href: "/about", label: "About" },
@@ -88,7 +91,7 @@ export default function Header({ links, cta }: { links: NavLink[]; cta: NavLink 
                 {l.label}
               </Link>
             ))}
-            <Link href={cta.href} className="btn btn-primary group">
+            <Link href={cta.href} {...tabProps(cta)} className="btn btn-primary group">
               {cta.label} <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
             </Link>
           </nav>
@@ -123,6 +126,7 @@ export default function Header({ links, cta }: { links: NavLink[]; cta: NavLink 
               ))}
               <Link
                 href={cta.href}
+                {...tabProps(cta)}
                 onClick={() => setOpen(false)}
                 className={`btn btn-primary mt-4 w-full py-3 transition-all duration-300 ${open ? "opacity-100" : "opacity-0"}`}
                 style={{ transitionDelay: open ? "230ms" : "0ms" }}

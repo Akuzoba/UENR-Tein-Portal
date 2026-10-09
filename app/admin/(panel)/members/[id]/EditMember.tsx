@@ -17,6 +17,10 @@ export default function EditMember({ m, programs, periods, genders }: Props) {
         Name
         <input name="name" defaultValue={m.name} required className="input" />
       </label>
+      <label className="field">
+        Student number <span className="font-normal text-muted">(reference or index)</span>
+        <input name="student_id" defaultValue={m.student_id ?? ""} placeholder="e.g. UA2301542" className="input font-mono uppercase" />
+      </label>
       <div className="grid grid-cols-2 gap-3">
         <label className="field">
           Phone

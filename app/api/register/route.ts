@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { findMemberByPhone, getPrograms, upsertMember } from "@/lib/db";
+import { findMemberByPhone, findMemberByStudentId, getPrograms, isStudentIdTaken, releaseStudentId, upsertMember } from "@/lib/db";
 import { startPayment } from "@/lib/paystack";
 import { isJpeg, savePhoto } from "@/lib/storage";
-import { GENDERS, PERIODS, PROGRAM_YEAR_OPTIONS } from "@/lib/config";
+import { GENDERS, PERIODS, PROGRAM_YEAR_OPTIONS, STUDENT_ID_ERROR, isStudentId, normalizeStudentId } from "@/lib/config";
 
 const optionalOf = (list: string[], msg: string) =>
   z.string().optional().refine((v) => !v || list.includes(v), msg);
@@ -11,6 +11,10 @@ const optionalOf = (list: string[], msg: string) =>
 const schema = z
   .object({
     name: z.string().trim().min(2, "Enter your full name").max(80, "Name is too long"),
+    student_id: z
+      .string({ error: STUDENT_ID_ERROR })
+      .transform(normalizeStudentId)
+      .refine(isStudentId, STUDENT_ID_ERROR),
     email: z.union([z.literal(""), z.string().trim().email("Enter a valid email")]).optional(),
     dob: z.union([z.literal(""), z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date of birth")]).optional(),
     gender: optionalOf(GENDERS, "Invalid gender"),
@@ -58,6 +62,19 @@ export async function POST(req: Request) {
     );
   }
 
+  // One member per student number. An unpaid registration doesn't hold on to it: the student may be
+  // registering again from another phone, so the number moves to this registration.
+  const holder = await findMemberByStudentId(d.student_id);
+  if (holder && holder.id !== existing?.id) {
+    if (holder.payment_status === "paid") {
+      return NextResponse.json(
+        { error: "This student number is already registered and paid. Contact a TEIN UENR executive if you think this is a mistake." },
+        { status: 409 },
+      );
+    }
+    await releaseStudentId(holder.id);
+  }
+
   const id = existing?.id ?? crypto.randomUUID();
   const photoPath = `${id}.jpg`;
   try {
@@ -69,6 +86,7 @@ export async function POST(req: Request) {
   const row = {
     id,
     name: d.name,
+    student_id: d.student_id,
     email: d.email || null,
     dob: d.dob || null,
     gender: d.gender || null,
@@ -81,7 +99,10 @@ export async function POST(req: Request) {
   };
   try {
     await upsertMember(row);
-  } catch {
+  } catch (e) {
+    if (isStudentIdTaken(e)) {
+      return NextResponse.json({ error: "This student number was just used by another registration. Contact a TEIN UENR executive." }, { status: 409 });
+    }
     return NextResponse.json({ error: "Could not save registration" }, { status: 500 });
   }
 
