@@ -2,7 +2,7 @@ import Link from "next/link";
 import QRCode from "qrcode";
 import { ArrowRight } from "lucide-react";
 import { countPaid, getSignatory } from "@/lib/db";
-import { INSTITUTION, SITE_URL, memberCode } from "@/lib/config";
+import { INSTITUTION, memberCode, portalHref, portalUrl } from "@/lib/config";
 import PageTransition from "@/components/PageTransition";
 import Reveal from "@/components/Reveal";
 import Tilt from "@/components/Tilt";
@@ -35,7 +35,7 @@ export default async function Home() {
     institution: INSTITUTION,
     period: `${year}-${year + 3}`,
     photo: "",
-    qr: await QRCode.toDataURL(SITE_URL, { margin: 1, width: 300 }),
+    qr: await QRCode.toDataURL(portalUrl("/portal"), { margin: 1, width: 300 }),
     signatory: await getSignatory(),
   };
 
@@ -66,7 +66,7 @@ export default async function Home() {
                 Official membership of the TEIN UENR NDC student body. Pay your dues online and get your receipt instantly. The executives then print your member card, with a QR code anyone can scan to verify it.
               </p>
               <div className="anim-rise mt-8 flex flex-wrap gap-3" style={{ animationDelay: "580ms" }}>
-                <Link href="/portal/register" className="btn btn-primary group px-6 py-3.5 text-base">
+                <Link href={portalHref("/portal/register")} className="btn btn-primary group px-6 py-3.5 text-base">
                   Register now <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
                 </Link>
                 <a href="#how" className="btn btn-outline px-6 py-3.5 text-base">
@@ -106,7 +106,7 @@ export default async function Home() {
                 <p className="eyebrow">How it works</p>
                 <h2 className="headline mt-3 text-5xl">About two minutes, start to finish</h2>
               </div>
-              <Link href="/portal/register" className="btn btn-dark">Start registration</Link>
+              <Link href={portalHref("/portal/register")} className="btn btn-dark">Start registration</Link>
             </Reveal>
             <ol className="mt-12 grid border-t-2 border-ink md:grid-cols-3">
               {steps.map(([title, text], i) => (
@@ -174,7 +174,7 @@ export default async function Home() {
         <section className="bg-ndc-red text-white">
           <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-6 px-5 py-12 sm:flex-row sm:items-center">
             <h2 className="headline text-4xl sm:text-5xl">{year} MEMBERSHIP REGISTRATION IS OPEN</h2>
-            <Link href="/portal/register" className="btn group bg-white px-6 py-3.5 text-base text-ink hover:bg-paper">
+            <Link href={portalHref("/portal/register")} className="btn group bg-white px-6 py-3.5 text-base text-ink hover:bg-paper">
               Register now <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
             </Link>
           </div>

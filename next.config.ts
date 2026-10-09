@@ -9,13 +9,7 @@ const nextConfig: NextConfig = {
     // Photos are resized in the browser before upload (well under 1 MB), but leave room for large originals.
     serverActions: { bodySizeLimit: "4mb" },
   },
-  async redirects() {
-    return [
-      // Portal pages moved under /portal; keep old links working (query strings are passed through).
-      { source: "/register", destination: "/portal/register", permanent: true },
-      { source: "/payment/callback", destination: "/portal/payment/callback", permanent: true },
-    ];
-  },
+  // Old /register and /payment/callback links are redirected in proxy.ts, which knows which domain was asked for.
 };
 
 export default nextConfig;

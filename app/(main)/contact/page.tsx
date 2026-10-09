@@ -6,6 +6,7 @@ import PageTransition from "@/components/PageTransition";
 import PageHero from "@/components/site/PageHero";
 import Reveal from "@/components/Reveal";
 import Tilt from "@/components/Tilt";
+import { portalHref } from "@/lib/config";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Contact – TEIN UENR" };
@@ -70,7 +71,7 @@ export default async function Contact() {
               <h2 className="font-display text-3xl font-bold uppercase">Want to join?</h2>
               <p className="mt-1 text-muted">Register online in about two minutes and pay your dues with mobile money or card.</p>
             </div>
-            <Link href="/portal/register" className="btn btn-dark group">
+            <Link href={portalHref("/portal/register")} className="btn btn-dark group">
               Register as a member <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Link>
           </div>

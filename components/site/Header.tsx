@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { ArrowRight } from "lucide-react";
 import Logo from "../brand/Logo";
+import { mainHref, portalHref } from "@/lib/config";
 
 export type NavLink = { href: string; label: string };
 
@@ -16,9 +17,9 @@ export const MAIN_NAV: NavLink[] = [
 ];
 
 export const PORTAL_NAV: NavLink[] = [
-  { href: "/portal#how", label: "How it works" },
-  { href: "/portal#faq", label: "Questions" },
-  { href: "/", label: "Main site" },
+  { href: portalHref("/portal#how"), label: "How it works" },
+  { href: portalHref("/portal#faq"), label: "Questions" },
+  { href: mainHref("/"), label: "Main site" },
 ];
 
 /**

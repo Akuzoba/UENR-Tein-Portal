@@ -6,6 +6,7 @@ import { useState } from "react";
 import { ExternalLink, FileText, History, Images, LayoutDashboard, LogOut, Menu, Printer, Settings, UserRound, Users, X } from "lucide-react";
 import Logo from "../brand/Logo";
 import { logout } from "@/app/admin/actions";
+import { mainHref } from "@/lib/config";
 import { can, roleLabel, type Permission } from "@/lib/roles";
 
 // Items without a permission are open to every admin (Settings holds "change your password").
@@ -58,7 +59,7 @@ function Nav({ username, role, onNavigate, morph = false }: Who & { onNavigate?:
       </nav>
 
       <div className="mt-auto space-y-3">
-        <a href="/" target="_blank" className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-semibold text-muted transition-colors hover:text-ink">
+        <a href={mainHref("/")} target="_blank" className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-semibold text-muted transition-colors hover:text-ink">
           <ExternalLink className="h-[18px] w-[18px]" /> View site
         </a>
         <div className="flex items-center gap-3 border-t border-line pt-4">

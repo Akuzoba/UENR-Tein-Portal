@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import QRCode from "qrcode";
 import { getFeeMinor, getMember } from "@/lib/db";
-import { SITE_URL, cardPeriod, fmtDateTime, fmtMoney, fmtPeriod, levelLabel, memberCode, methodLabel, receiptNo } from "@/lib/config";
+import { cardPeriod, fmtDateTime, fmtMoney, fmtPeriod, levelLabel, memberCode, methodLabel, receiptNo, portalHref, portalUrl } from "@/lib/config";
 import PageTransition from "@/components/PageTransition";
 import StatusMark from "@/components/StatusMark";
 import { LogoMark } from "@/components/brand/Logo";
@@ -36,7 +36,7 @@ export default async function ReceiptPage({ params }: PageProps<"/portal/receipt
   }
 
   const year = new Date(m.paid_at).getFullYear();
-  const qr = await QRCode.toDataURL(`${SITE_URL}/verify/${m.id}`, { margin: 1, width: 240 });
+  const qr = await QRCode.toDataURL(portalUrl(`/verify/${m.id}`), { margin: 1, width: 240 });
   const rows: [string, string][] = [
     ["Received from", m.name],
     ["Phone", m.phone],
@@ -115,7 +115,7 @@ export default async function ReceiptPage({ params }: PageProps<"/portal/receipt
 
         <div className="no-print anim-rise mt-6 flex flex-wrap justify-center gap-3" style={{ animationDelay: "300ms" }}>
           <PrintReceipt />
-          <Link href="/portal" className="btn btn-ghost">Back to home</Link>
+          <Link href={portalHref("/portal")} className="btn btn-ghost">Back to home</Link>
         </div>
         <p className="no-print mt-4 max-w-md text-center text-xs text-muted">Bookmark this page to see your receipt again.</p>
       </main>

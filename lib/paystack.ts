@@ -1,5 +1,5 @@
 import { logAudit } from "./audit";
-import { CURRENCY, SITE_URL, fmtMoney } from "./config";
+import { CURRENCY, fmtMoney, portalUrl } from "./config";
 import { getFeeMinor, getMember, markPaid, setDue, type Member } from "./db";
 
 const BASE = "https://api.paystack.co";
@@ -50,7 +50,7 @@ export async function startPayment(member: Pick<Member, "id" | "phone" | "email"
       amount,
       currency: CURRENCY,
       reference,
-      callback_url: `${SITE_URL}/portal/payment/callback`,
+      callback_url: portalUrl("/portal/payment/callback"),
       metadata: { member_id: member.id },
     }),
   });
