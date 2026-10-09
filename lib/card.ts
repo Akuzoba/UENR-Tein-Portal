@@ -1,6 +1,6 @@
 import QRCode from "qrcode";
 import type { CardData } from "@/components/MemberCard";
-import { INSTITUTION, SITE_URL, cardPeriod, fmtPeriod, memberCode } from "./config";
+import { INSTITUTION, cardPeriod, fmtPeriod, memberCode, portalUrl } from "./config";
 import { getSignatory, type Member, type Signatory } from "./db";
 import { photoDataUrl } from "./storage";
 
@@ -16,7 +16,7 @@ export async function cardData(m: Member, signatory?: Signatory): Promise<CardDa
     institution: INSTITUTION,
     period: fmtPeriod(cardPeriod(m)),
     photo: await photoDataUrl(m.photo_path),
-    qr: await QRCode.toDataURL(`${SITE_URL}/verify/${m.id}`, { margin: 1, width: 300 }),
+    qr: await QRCode.toDataURL(portalUrl(`/verify/${m.id}`), { margin: 1, width: 300 }),
     signatory: signatory ?? (await getSignatory()),
   };
 }

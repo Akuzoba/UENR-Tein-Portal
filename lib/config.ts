@@ -21,10 +21,36 @@ export const PROGRAM_YEAR_OPTIONS = [2, 3, 4, 5, 6];
 
 export const GENDERS = ["Male", "Female"];
 
-// Public address used in QR codes and Paystack callbacks. On Vercel it falls back to the production domain.
+// Public address of the main site. On Vercel it falls back to the production domain.
 export const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ||
   (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "http://localhost:3000");
+
+/*
+ * The membership portal (registration, receipts, payments, card verification, admin) can run on its own domain,
+ * e.g. NEXT_PUBLIC_PORTAL_URL=https://portal.uenr-tein.org with NEXT_PUBLIC_SITE_URL=https://uenr-tein.org.
+ * There, /portal/register is served as /register and so on (see proxy.ts). Without it, the portal stays under
+ * /portal on the main site. Code always names portal pages by their app path ("/portal/register", "/verify/<id>")
+ * and lets these helpers turn that into the right address.
+ */
+const PORTAL_URL = process.env.NEXT_PUBLIC_PORTAL_URL?.replace(/\/$/, "") || null;
+const MAIN_URL = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") || null;
+
+/** "/portal/register" → "/register", "/portal" → "/", "/portal#faq" → "/#faq"; other paths are unchanged. */
+export function portalPath(path: string) {
+  if (!/^\/portal(?=$|[/?#])/.test(path)) return path;
+  const rest = path.slice("/portal".length);
+  return rest.startsWith("/") ? rest : `/${rest}`;
+}
+
+/** Link to a portal page: absolute on the portal domain when it has one, else the plain path. */
+export const portalHref = (path: string) => (PORTAL_URL ? PORTAL_URL + portalPath(path) : path);
+
+/** Full address of a portal page, for QR codes, payment callbacks and copied links. */
+export const portalUrl = (path: string) => (PORTAL_URL ? PORTAL_URL + portalPath(path) : SITE_URL + path);
+
+/** Link to a main-site page from anywhere, including the portal domain. */
+export const mainHref = (path: string) => (PORTAL_URL && MAIN_URL ? MAIN_URL + path : path);
 export const CURRENCY = process.env.PAYSTACK_CURRENCY || "GHS";
 // Starting membership fee in major units (e.g. GHS). After that, admins set it in Settings.
 export const DEFAULT_FEE = Number(process.env.MEMBERSHIP_FEE || 20);

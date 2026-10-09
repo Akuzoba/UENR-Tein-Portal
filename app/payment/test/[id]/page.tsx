@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { getFeeMinor, getMember } from "@/lib/db";
 import { TEST_CARD, TEST_MOMO, paymentMode } from "@/lib/paystack";
-import { fmtMoney } from "@/lib/config";
+import { fmtMoney, portalHref } from "@/lib/config";
 import PageTransition from "@/components/PageTransition";
 import TestCheckout from "./TestCheckout";
 
@@ -14,7 +14,7 @@ export default async function TestCheckoutPage({ params, searchParams }: PagePro
   const { ref } = await searchParams;
   const m = await getMember(id);
   if (!m) notFound();
-  if (m.payment_status === "paid") redirect(`/portal/receipt/${id}`);
+  if (m.payment_status === "paid") redirect(portalHref(`/portal/receipt/${id}`));
 
   return (
     <PageTransition>

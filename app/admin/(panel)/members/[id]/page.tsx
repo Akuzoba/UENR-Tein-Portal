@@ -5,7 +5,7 @@ import { requirePermission } from "@/lib/admin";
 import { auditFor } from "@/lib/audit";
 import { getMember, getPrograms } from "@/lib/db";
 import { cardData } from "@/lib/card";
-import { GENDERS, PERIODS, SITE_URL, cardPeriod, fmtDate, fmtDateTime, fmtMoney, fmtPeriod, levelLabel, memberCode, methodLabel } from "@/lib/config";
+import { GENDERS, PERIODS, cardPeriod, fmtDate, fmtDateTime, fmtMoney, fmtPeriod, levelLabel, memberCode, methodLabel, portalUrl } from "@/lib/config";
 import { can } from "@/lib/roles";
 import MemberCard from "@/components/MemberCard";
 import PageTransition from "@/components/PageTransition";
@@ -54,7 +54,7 @@ export default async function MemberPage({ params }: PageProps<"/admin/members/[
             <p className="mt-1 text-sm text-muted">{[m.program, m.level && levelLabel(m.level), m.program_years && `${m.program_years}-year programme`, m.period, m.phone].filter(Boolean).join(" · ")}</p>
             {m.member_no && <p className="mt-2 font-mono text-sm font-semibold">{memberCode(m.member_no, m.paid_at)}</p>}
           </div>
-          {card && <CopyLink url={`${SITE_URL}/portal/receipt/${m.id}`} />}
+          {card && <CopyLink url={portalUrl(`/portal/receipt/${m.id}`)} />}
         </div>
 
         <div className="mt-6 grid gap-4 xl:grid-cols-[360px_1fr]">

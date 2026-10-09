@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { logAudit } from "@/lib/audit";
-import { fmtMoney } from "@/lib/config";
+import { fmtMoney, portalHref } from "@/lib/config";
 import { getFeeMinor, getMember, markPaid } from "@/lib/db";
 import { TEST_CARD, TEST_MOMO, paymentMode } from "@/lib/paystack";
 
@@ -33,5 +33,5 @@ export async function payTest(_: TestPayState, form: FormData): Promise<TestPayS
       details: { reference: ref, amount, method },
     });
   }
-  redirect(`/portal/receipt/${id}`);
+  redirect(portalHref(`/portal/receipt/${id}`));
 }

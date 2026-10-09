@@ -2,10 +2,11 @@ import Link from "next/link";
 import { LogoMark } from "../brand/Logo";
 import { getContent, type SiteContent } from "@/lib/site";
 import { socialLinks } from "./social";
+import { mainHref, portalHref } from "@/lib/config";
 
 const COLUMNS: [string, [string, string][]][] = [
-  ["TEIN UENR", [["/about", "About us"], ["/activities", "Activities"], ["/executives", "Executives"], ["/contact", "Contact"]]],
-  ["Membership", [["/portal/register", "Register"], ["/portal#how", "How it works"], ["/portal#faq", "Questions"]]],
+  ["TEIN UENR", [[mainHref("/about"), "About us"], [mainHref("/activities"), "Activities"], [mainHref("/executives"), "Executives"], [mainHref("/contact"), "Contact"]]],
+  ["Membership", [[portalHref("/portal/register"), "Register"], [portalHref("/portal#how"), "How it works"], [portalHref("/portal#faq"), "Questions"]]],
 ];
 
 /** `dark` is the main site's ink footer with the oversized wordmark; the portal keeps the plain white one. */

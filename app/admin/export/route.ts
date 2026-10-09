@@ -2,7 +2,7 @@ import { currentAdmin } from "@/lib/admin";
 import { logAudit } from "@/lib/audit";
 import { can } from "@/lib/roles";
 import { listMembers } from "@/lib/db";
-import { SITE_URL, cardPeriod, fmtPeriod, memberCode, methodLabel } from "@/lib/config";
+import { cardPeriod, fmtPeriod, memberCode, methodLabel, portalUrl } from "@/lib/config";
 
 // Leading = + - @ would be run as formulas by Excel.
 const esc = (v: unknown) => {
@@ -42,7 +42,7 @@ export async function GET(req: Request) {
       m.paystack_ref,
       m.paid_at,
       m.created_at,
-      m.payment_status === "paid" ? `${SITE_URL}/portal/receipt/${m.id}` : "",
+      m.payment_status === "paid" ? portalUrl(`/portal/receipt/${m.id}`) : "",
     ]
       .map(esc)
       .join(","),

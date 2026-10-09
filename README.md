@@ -105,6 +105,28 @@ last registration step and at checkout. See `.env.example` for all settings. Pro
 - `/verify/<id>`: what the card's QR code opens
 - Old `/register`, `/receipt/<id>` and `/card/<id>` links redirect to their new addresses.
 
+## Domains
+
+Production runs on two domains from the same app (`proxy.ts`), switched on by two Production environment variables:
+
+| Variable                 | Value                          |
+| ------------------------ | ------------------------------ |
+| `NEXT_PUBLIC_SITE_URL`   | `https://uenr-tein.org`        |
+| `NEXT_PUBLIC_PORTAL_URL` | `https://portal.uenr-tein.org` |
+
+- **portal.uenr-tein.org**: the portal without the `/portal` prefix (`/`, `/register`, `/receipt/<id>`,
+  `/payment/callback`), plus `/verify/<id>`, `/admin`, `/pay/<id>` and the test checkout. QR codes, receipt links and
+  the Paystack return address use this domain.
+- **uenr-tein.org** (and `www`, which redirects to it): the main site. Portal, admin and verify addresses there
+  permanently redirect to the portal domain, keeping the path and query string. API routes are never redirected, so
+  `https://uenr-tein.org/api/paystack/webhook` and the portal-domain address both work.
+- **uenr-tein.vercel.app**, preview deployments and localhost serve everything as before (`/portal/...`). Keep the
+  vercel.app domain attached: cards printed before the custom domains have QR codes pointing at it.
+
+Without `NEXT_PUBLIC_PORTAL_URL` the site is single-domain again. Both are `NEXT_PUBLIC_` variables, so changing them
+needs a redeploy. In code, name portal pages by their app path and use `portalHref` / `portalUrl` / `mainHref` from
+`lib/config.ts` for links that cross domains.
+
 ## Main site content
 
 Executives manage everything in **Admin → Website**:
