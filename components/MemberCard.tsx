@@ -188,16 +188,23 @@ function save(url: string, filename: string) {
   a.click();
 }
 
-export default function MemberCard({ d }: { d: CardData }) {
+type ExportKind = "pdf" | "png" | "print";
+
+/**
+ * `onExport` is called whenever the card is downloaded or printed (the admin page logs it).
+ * Without it the download and print buttons are hidden, for admins whose role can't print cards.
+ */
+export default function MemberCard({ d, onExport }: { d: CardData; onExport?: (kind: ExportKind) => Promise<void> }) {
   const front = useRef<HTMLDivElement>(null);
   const back = useRef<HTMLDivElement>(null);
   const [flipped, setFlipped] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const file = memberCodeFile(d.code);
 
-  async function run(kind: string, fn: () => Promise<void>) {
+  async function run(kind: ExportKind, fn: () => Promise<void>) {
     setBusy(kind);
     try {
+      onExport?.(kind).catch(() => {}); // the log entry must never stop the download
       await fn();
     } catch {
       alert("Could not generate the card. Please try again.");
@@ -247,18 +254,22 @@ export default function MemberCard({ d }: { d: CardData }) {
           <RotateCcw className={`h-4 w-4 transition-transform duration-700 ${flipped ? "rotate-180" : ""}`} />
           {flipped ? "Show front" : "Show back"}
         </button>
-        <button onClick={downloadPdf} disabled={!!busy} className="btn btn-green">
-          <FileDown className="h-4 w-4" />
-          {busy === "pdf" ? "Preparing…" : "Download PDF"}
-        </button>
-        <button onClick={downloadPng} disabled={!!busy} className="btn btn-ghost">
-          <ImageDown className="h-4 w-4" />
-          {busy === "png" ? "Preparing…" : "PNG images"}
-        </button>
-        <button onClick={() => window.print()} className="btn btn-dark">
-          <Printer className="h-4 w-4" />
-          Print
-        </button>
+        {onExport && (
+          <>
+            <button onClick={downloadPdf} disabled={!!busy} className="btn btn-green">
+              <FileDown className="h-4 w-4" />
+              {busy === "pdf" ? "Preparing…" : "Download PDF"}
+            </button>
+            <button onClick={downloadPng} disabled={!!busy} className="btn btn-ghost">
+              <ImageDown className="h-4 w-4" />
+              {busy === "png" ? "Preparing…" : "PNG images"}
+            </button>
+            <button onClick={() => (onExport("print").catch(() => {}), window.print())} className="btn btn-dark">
+              <Printer className="h-4 w-4" />
+              Print
+            </button>
+          </>
+        )}
       </div>
       <p className="no-print max-w-md text-center text-xs leading-relaxed text-muted">
         Tap the card to flip it. The PDF is exact credit-card size (85.6 × 54 mm), front then back, ready for any card

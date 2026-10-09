@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { requirePermission } from "@/lib/admin";
 import { ChevronRight } from "lucide-react";
 import { listExecutives, photoOf, type Executive } from "@/lib/site";
 import PageTransition from "@/components/PageTransition";
@@ -28,6 +29,7 @@ function Row({ e }: { e: Executive }) {
 }
 
 export default async function ExecutivesAdmin() {
+  await requirePermission("website.edit");
   const all = await listExecutives();
   const current = all.filter((e) => e.is_current);
   const past = all.filter((e) => !e.is_current);

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { requirePermission } from "@/lib/admin";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ExternalLink, Star, Trash2 } from "lucide-react";
 import { activityPhotos, getActivity } from "@/lib/site";
@@ -11,6 +12,7 @@ import { ActivityForm } from "../../forms";
 export const metadata = { title: "Edit activity – TEIN UENR Admin" };
 
 export default async function EditActivityPage({ params, searchParams }: PageProps<"/admin/website/activities/[id]">) {
+  await requirePermission("website.edit");
   const a = await getActivity({ id: (await params).id });
   if (!a) notFound();
   const { new: isNew } = await searchParams;

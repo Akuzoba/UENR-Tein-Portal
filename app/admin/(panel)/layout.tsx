@@ -10,7 +10,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div className="flex flex-1 flex-col">
-      <Sidebar username={admin.username} />
+      <Sidebar username={admin.username} role={admin.role} />
       <div className="flex flex-1 flex-col lg:pl-60">
         {(admin.must_change === 1 || isTestMode()) && (
           <div className="no-print mx-auto mt-5 flex w-full max-w-7xl flex-col gap-2 px-4 sm:px-8">

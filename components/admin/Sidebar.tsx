@@ -3,25 +3,30 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { ExternalLink, FileText, Images, LayoutDashboard, LogOut, Menu, Printer, Settings, UserRound, Users, X } from "lucide-react";
+import { ExternalLink, FileText, History, Images, LayoutDashboard, LogOut, Menu, Printer, Settings, UserRound, Users, X } from "lucide-react";
 import Logo from "../brand/Logo";
 import { logout } from "@/app/admin/actions";
+import { can, roleLabel, type Permission } from "@/lib/roles";
 
-const NAV = [
-  { href: "/admin", label: "Overview", icon: LayoutDashboard },
-  { href: "/admin/members", label: "Members", icon: Users },
-  { href: "/admin/cards", label: "Print cards", icon: Printer },
+// Items without a permission are open to every admin (Settings holds "change your password").
+const NAV: ({ section: string; needs: Permission } | { href: string; label: string; icon: typeof Users; needs?: Permission })[] = [
+  { href: "/admin", label: "Overview", icon: LayoutDashboard, needs: "dashboard.view" },
+  { href: "/admin/members", label: "Members", icon: Users, needs: "members.view" },
+  { href: "/admin/cards", label: "Print cards", icon: Printer, needs: "cards.print" },
+  { href: "/admin/activity", label: "Activity log", icon: History, needs: "audit.view" },
   { href: "/admin/settings", label: "Settings", icon: Settings },
-  { section: "Website" },
-  { href: "/admin/website", label: "Site content", icon: FileText },
-  { href: "/admin/website/executives", label: "Executives", icon: UserRound },
-  { href: "/admin/website/activities", label: "Activities", icon: Images },
-] as const;
+  { section: "Website", needs: "website.edit" },
+  { href: "/admin/website", label: "Site content", icon: FileText, needs: "website.edit" },
+  { href: "/admin/website/executives", label: "Executives", icon: UserRound, needs: "website.edit" },
+  { href: "/admin/website/activities", label: "Activities", icon: Images, needs: "website.edit" },
+];
 
 // Exact match for pages that have sub-sections of their own in the menu.
 const EXACT = new Set(["/admin", "/admin/website"]);
 
-function Nav({ username, onNavigate, morph = false }: { username: string; onNavigate?: () => void; morph?: boolean }) {
+type Who = { username: string; role: string };
+
+function Nav({ username, role, onNavigate, morph = false }: Who & { onNavigate?: () => void; morph?: boolean }) {
   const path = usePathname();
   const active = (href: string) => (EXACT.has(href) ? path === href : path.startsWith(href));
 
@@ -31,7 +36,7 @@ function Nav({ username, onNavigate, morph = false }: { username: string; onNavi
         <Logo morph={morph} />
       </Link>
       <nav className="mt-8 flex flex-col gap-0.5">
-        {NAV.map((item) => {
+        {NAV.filter((item) => !item.needs || can(role, item.needs)).map((item) => {
           if ("section" in item)
             return <div key={item.section} className="mt-5 mb-1 px-3 text-xs font-semibold tracking-wider text-muted/80 uppercase">{item.section}</div>;
           const { href, label, icon: Icon } = item;
@@ -60,7 +65,7 @@ function Nav({ username, onNavigate, morph = false }: { username: string; onNavi
           <span className="flex h-9 w-9 items-center justify-center rounded-full bg-ndc-green text-sm font-bold text-white uppercase">{username[0]}</span>
           <div className="min-w-0 flex-1">
             <div className="truncate text-sm font-semibold">{username}</div>
-            <div className="text-xs text-muted">Administrator</div>
+            <div className="text-xs text-muted">{roleLabel(role)}</div>
           </div>
           <form action={logout}>
             <button className="rounded-md p-2 text-muted transition-colors hover:bg-paper hover:text-ndc-red" title="Sign out" aria-label="Sign out">
@@ -73,14 +78,14 @@ function Nav({ username, onNavigate, morph = false }: { username: string; onNavi
   );
 }
 
-export default function Sidebar({ username }: { username: string }) {
+export default function Sidebar({ username, role }: Who) {
   const [open, setOpen] = useState(false);
 
   return (
     <>
       <aside className="no-print fixed inset-y-0 left-0 z-40 hidden w-60 border-r border-line bg-white p-4 lg:block" style={{ viewTransitionName: "site-header" }}>
         <div className="flag-rule absolute inset-x-0 top-0 h-1" />
-        <Nav username={username} morph />
+        <Nav username={username} role={role} morph />
       </aside>
 
       <div className="no-print sticky top-0 z-40 flex items-center justify-between border-b border-line bg-white px-4 py-3 lg:hidden">
@@ -98,7 +103,7 @@ export default function Sidebar({ username }: { username: string }) {
         aria-hidden={!open}
       >
         <button onClick={() => setOpen(false)} className="absolute top-4 right-4 rounded-md p-2 text-muted hover:bg-paper" aria-label="Close menu"><X className="h-5 w-5" /></button>
-        <Nav username={username} onNavigate={() => setOpen(false)} />
+        <Nav username={username} role={role} onNavigate={() => setOpen(false)} />
       </aside>
     </>
   );

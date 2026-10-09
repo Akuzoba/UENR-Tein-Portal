@@ -1,4 +1,5 @@
 import { ExternalLink } from "lucide-react";
+import { requirePermission } from "@/lib/admin";
 import { getContent } from "@/lib/site";
 import PageTransition from "@/components/PageTransition";
 import PageHeader from "@/components/admin/PageHeader";
@@ -7,6 +8,7 @@ import { ContentForm } from "./forms";
 export const metadata = { title: "Site content – TEIN UENR Admin" };
 
 export default async function SiteContentPage() {
+  await requirePermission("website.edit");
   return (
     <PageTransition>
       <div>

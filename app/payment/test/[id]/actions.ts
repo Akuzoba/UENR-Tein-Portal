@@ -1,6 +1,8 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { logAudit } from "@/lib/audit";
+import { fmtMoney } from "@/lib/config";
 import { getFeeMinor, getMember, markPaid } from "@/lib/db";
 import { TEST_CARD, TEST_MOMO, paymentMode } from "@/lib/paystack";
 
@@ -23,6 +25,13 @@ export async function payTest(_: TestPayState, form: FormData): Promise<TestPayS
   }
 
   await new Promise((r) => setTimeout(r, 1400)); // feel like a real authorisation round-trip
-  await markPaid(id, ref, m.due_amount ?? (await getFeeMinor()), form.get("channel") === "card" ? "test:card" : "test:momo");
+  const amount = m.due_amount ?? (await getFeeMinor());
+  const method = form.get("channel") === "card" ? "test:card" : "test:momo";
+  if (await markPaid(id, ref, amount, method)) {
+    await logAudit("system", "payment.confirmed", `Test checkout: ${fmtMoney(amount)} from ${m.name} (no real money)`, {
+      target: { type: "member", id },
+      details: { reference: ref, amount, method },
+    });
+  }
   redirect(`/portal/receipt/${id}`);
 }

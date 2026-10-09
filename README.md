@@ -40,6 +40,36 @@ Go to **/admin**:
 You'll be asked to change the password after the first sign-in. Additional admins can be added under
 **Admin → Settings**.
 
+## Admin roles
+
+Every executive gets their own login with one role (`lib/roles.ts`):
+
+| Role               | Can do                                                                 |
+| ------------------ | ---------------------------------------------------------------------- |
+| Super admin        | Everything: admins and roles, fee, signatory, activity log, deleting members |
+| Finance            | Members, marking cash payments, CSV export                             |
+| Membership officer | Members, correcting details, printing cards, the programme list        |
+| Content editor     | The website section only                                               |
+
+Super admins manage accounts in **Admin → Settings → Admin users**. Deactivate an executive at the end of their term
+rather than sharing their password: they're signed out at once and can't sign in again, and their history stays in
+the activity log. Nobody can change their own role or deactivate themselves, and there is always at least one
+active super admin. Admins that existed before roles were added became super admins, keeping their passwords.
+
+Every page and server action checks the role on the server, so hiding a button is never the only protection.
+
+## Activity log
+
+**Admin → Activity log** (super admins) records sign-ins (including failed attempts and lockouts), admin account
+changes, cash payments, Paystack/test payment confirmations and rejected payments, member edits (with before/after
+values), member deletions (with a copy of the deleted record), CSV exports, card downloads and prints, fee,
+signatory and programme changes, and website edits. Filter by person, type, date or text. Each member's page shows
+their own history.
+
+The `audit_log` table is append-only: a database trigger rejects updates, deletes and truncation, from the app or
+from Supabase's SQL editor alike. Card printing is logged when the Print / Download buttons are used; printing with
+the browser's own menu (Ctrl+P) can't be detected.
+
 ## Payments
 
 | `PAYSTACK_SECRET_KEY` in `.env.local` | What happens                                                                 |
@@ -107,8 +137,8 @@ it passport-style. Members can switch the white background off to compare with t
 ## Features
 
 - **Public:** portal landing page, registration with photo upload and year of study, payment, receipt, QR verify page.
-- **Admin:** stats, search/filter members, member details and editing, view/download/print any member's card,
-  mark cash payments as paid, delete members, bulk print cards, CSV export, admin users and passwords.
+- **Admin:** role-based access, activity log, stats, search/filter members, member details and editing, view/download/print any member's card,
+  mark cash payments as paid, delete members, bulk print cards, CSV export, admin users, roles and passwords.
 
 ## Design
 

@@ -1,4 +1,5 @@
-import { CURRENCY, SITE_URL } from "./config";
+import { logAudit } from "./audit";
+import { CURRENCY, SITE_URL, fmtMoney } from "./config";
 import { getFeeMinor, getMember, markPaid, setDue, type Member } from "./db";
 
 const BASE = "https://api.paystack.co";
@@ -76,7 +77,22 @@ export async function confirmPayment(reference: string): Promise<string | null> 
   const member = memberId ? await getMember(memberId) : undefined;
   if (!memberId || !member) return null;
   // Never accept less than the amount we quoted (or the current fee, for records created before quoting).
-  if (tx.amount < (member.due_amount ?? (await getFeeMinor())) || tx.currency !== CURRENCY) return null;
-  await markPaid(memberId, reference, tx.amount, tx.channel ? `paystack:${tx.channel}` : "paystack");
+  const due = member.due_amount ?? (await getFeeMinor());
+  if (tx.amount < due || tx.currency !== CURRENCY) {
+    if (member.payment_status !== "paid") {
+      await logAudit("system", "payment.rejected", `Paystack payment from ${member.name} not accepted: ${tx.currency} ${(tx.amount / 100).toFixed(2)} instead of ${fmtMoney(due)}`, {
+        target: { type: "member", id: memberId },
+        details: { reference, amount: tx.amount, currency: tx.currency, due },
+      });
+    }
+    return null;
+  }
+  const method = tx.channel ? `paystack:${tx.channel}` : "paystack";
+  if (await markPaid(memberId, reference, tx.amount, method)) {
+    await logAudit("system", "payment.confirmed", `Paystack confirmed ${fmtMoney(tx.amount)} from ${member.name}`, {
+      target: { type: "member", id: memberId },
+      details: { reference, amount: tx.amount, method },
+    });
+  }
   return memberId;
 }

@@ -1,12 +1,15 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, BadgeCheck, Trash2 } from "lucide-react";
+import { requirePermission } from "@/lib/admin";
+import { auditFor } from "@/lib/audit";
 import { getMember, getPrograms } from "@/lib/db";
 import { cardData } from "@/lib/card";
-import { GENDERS, PERIODS, SITE_URL, cardPeriod, fmtDate, fmtMoney, fmtPeriod, levelLabel, memberCode, methodLabel } from "@/lib/config";
+import { GENDERS, PERIODS, SITE_URL, cardPeriod, fmtDate, fmtDateTime, fmtMoney, fmtPeriod, levelLabel, memberCode, methodLabel } from "@/lib/config";
+import { can } from "@/lib/roles";
 import MemberCard from "@/components/MemberCard";
 import PageTransition from "@/components/PageTransition";
-import { deleteMember, markMemberPaid } from "../../../actions";
+import { deleteMember, logCardExport, markMemberPaid } from "../../../actions";
 import EditMember from "./EditMember";
 import ConfirmButton from "./ConfirmButton";
 import CopyLink from "./CopyLink";
@@ -16,10 +19,13 @@ export const metadata = { title: "Member – TEIN UENR Admin" };
 const H2 = ({ children }: { children: React.ReactNode }) => <h2 className="font-display text-xl font-bold uppercase">{children}</h2>;
 
 export default async function MemberPage({ params }: PageProps<"/admin/members/[id]">) {
+  const admin = await requirePermission("members.view");
   const { id } = await params;
   const m = await getMember(id);
   if (!m) notFound();
   const card = await cardData(m);
+  const history = await auditFor("member", m.id);
+  const may = (p: Parameters<typeof can>[1]) => can(admin.role, p);
 
   const facts: [string, string][] = [
     ["Method", methodLabel(m.payment_method)],
@@ -63,7 +69,7 @@ export default async function MemberPage({ params }: PageProps<"/admin/members/[
                   </div>
                 ))}
               </dl>
-              {m.payment_status !== "paid" && (
+              {m.payment_status !== "paid" && may("payments.cash") && (
                 <form action={markMemberPaid} className="mt-4">
                   <input type="hidden" name="id" value={m.id} />
                   <ConfirmButton className="btn btn-green w-full" message={`Mark ${m.name} as paid (cash/manual)? This issues a member number.`}>
@@ -73,27 +79,49 @@ export default async function MemberPage({ params }: PageProps<"/admin/members/[
               )}
             </section>
 
-            <section className="panel p-5">
-              <H2>Edit details</H2>
-              <EditMember m={m} programs={await getPrograms()} periods={PERIODS} genders={GENDERS} />
-            </section>
+            {may("members.edit") && (
+              <section className="panel p-5">
+                <H2>Edit details</H2>
+                <EditMember m={m} programs={await getPrograms()} periods={PERIODS} genders={GENDERS} />
+              </section>
+            )}
 
             <section className="panel p-5">
-              <H2>Delete</H2>
-              <p className="mt-1 text-sm text-muted">Permanently removes this member and their photo.</p>
-              <form action={deleteMember} className="mt-4">
-                <input type="hidden" name="id" value={m.id} />
-                <ConfirmButton className="btn btn-danger w-full" message={`Permanently delete ${m.name} and their photo? This cannot be undone.`}>
-                  <Trash2 className="h-4 w-4" /> Delete member
-                </ConfirmButton>
-              </form>
+              <H2>History</H2>
+              {history.length === 0 ? (
+                <p className="mt-2 text-sm text-muted">No admin activity recorded yet. Changes made before the activity log was added aren&apos;t shown.</p>
+              ) : (
+                <ol className="mt-3 space-y-3 border-l-2 border-line pl-4 text-sm">
+                  {history.map((h) => (
+                    <li key={h.id}>
+                      <div className="font-semibold">{h.summary}</div>
+                      <div className="text-xs text-muted">
+                        {fmtDateTime(h.at)} · {h.actor === "system" ? "Automatic" : h.actor}
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              )}
             </section>
+
+            {may("members.delete") && (
+              <section className="panel p-5">
+                <H2>Delete</H2>
+                <p className="mt-1 text-sm text-muted">Permanently removes this member and their photo.</p>
+                <form action={deleteMember} className="mt-4">
+                  <input type="hidden" name="id" value={m.id} />
+                  <ConfirmButton className="btn btn-danger w-full" message={`Permanently delete ${m.name} and their photo? This cannot be undone.`}>
+                    <Trash2 className="h-4 w-4" /> Delete member
+                  </ConfirmButton>
+                </form>
+              </section>
+            )}
           </div>
 
           <section className="panel flex flex-col items-center p-6 sm:p-10">
             <div className="no-print mb-8 self-start"><H2>Membership card</H2></div>
             {card ? (
-              <MemberCard d={card} />
+              <MemberCard d={card} onExport={may("cards.print") ? logCardExport.bind(null, m.id) : undefined} />
             ) : (
               <div className="flex flex-1 flex-col items-center justify-center py-16 text-center">
                 <p className="font-semibold">No card yet</p>

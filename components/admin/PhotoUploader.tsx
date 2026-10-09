@@ -32,7 +32,7 @@ export default function PhotoUploader({ activityId }: { activityId: string }) {
       setProgress({ done: i + 1, total: images.length });
     }
     setErrors(failed);
-    await finishUpload(); // refreshes the page with the new photos
+    await finishUpload(activityId, images.length - failed); // logs the batch and refreshes the page
     setProgress(null);
     if (input.current) input.current.value = "";
   }

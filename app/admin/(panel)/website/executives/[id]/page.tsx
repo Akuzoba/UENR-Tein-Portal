@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { requirePermission } from "@/lib/admin";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Trash2 } from "lucide-react";
 import { getExecutive, photoOf } from "@/lib/site";
@@ -10,6 +11,7 @@ import { ExecutiveForm } from "../../forms";
 export const metadata = { title: "Edit executive – TEIN UENR Admin" };
 
 export default async function EditExecutivePage({ params }: PageProps<"/admin/website/executives/[id]">) {
+  await requirePermission("website.edit");
   const e = await getExecutive((await params).id);
   if (!e) notFound();
 
